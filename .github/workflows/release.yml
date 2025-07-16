@@ -42,18 +42,22 @@ jobs:
           $packageJson.version = $version
           $packageJson | ConvertTo-Json -Depth 10 | Set-Content package.json
           echo "Updated package.json version to: $version (temporary for build only)"
+        working-directory: client
 
       - name: Install client dependencies
         run: npm ci
+        working-directory: client
 
       - name: Build Electron app
         run: npm run build:win
+        working-directory: client
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Zip Client Build
         run: |
-          Compress-Archive -Path client/dist/*.exe,client/dist/*.yml -DestinationPath client-build.zip
+          Compress-Archive -Path dist/*.exe,dist/*.yml -DestinationPath ../client-build.zip
+        working-directory: client
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
