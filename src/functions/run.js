@@ -1,7 +1,6 @@
 import path from 'path';
-import runUtils from './../../../runUtils/index.js';
+import runUtils from './../../runUtils/index.js';
 import { progressCallback, progressActive, progressLoading, FileLocation } from './utils.js';
-
 
 /**
  * Executes user-provided async code in the context of a specific game directory.
