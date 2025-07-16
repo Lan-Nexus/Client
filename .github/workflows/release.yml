@@ -36,7 +36,6 @@ jobs:
           echo "Extracted version: $version"
 
       - name: Update package.json version (temporary for build)
-        working-directory: ./client
         run: |
           $version = "${{ steps.get_version.outputs.version }}"
           $packageJson = Get-Content package.json | ConvertFrom-Json
@@ -45,11 +44,9 @@ jobs:
           echo "Updated package.json version to: $version (temporary for build only)"
 
       - name: Install client dependencies
-        working-directory: ./client
         run: npm ci
 
       - name: Build Electron app
-        working-directory: ./client
         run: npm run build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
