@@ -1,5 +1,5 @@
 import path from 'path';
-import runUtils from '../runUtils/index.js';
+import runUtils from '@runUtils/index.js';
 import { progressCallback, progressActive, progressLoading, FileLocation } from './utils.js';
 
 /**
