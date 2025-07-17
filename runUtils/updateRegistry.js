@@ -1,6 +1,6 @@
 import { execFile } from 'child_process';
 import util from 'util';
-import Logger from '../client/src/main/logger';
+import Logger from '../main/logger';
 
 const execFileAsync = util.promisify(execFile);
 
@@ -42,10 +42,10 @@ function buildSetItemCommand(hive, key, nameVar, subkey, value) {
   const psHive = hive + ':';
   // Don't double-escape backslashes - PowerShell handles single backslashes fine in quoted strings
   const psPath = `${psHive}\\${key}\\${subkey}`;
-  
+
   // Escape double quotes in the value to prevent command injection
   const escapedValue = value.replace(/"/g, '""');
-  
+
   // Command to create the path if it doesn't exist and then set the property
   return `if (-not (Test-Path '${psPath}')) { New-Item -Path '${psPath}' -Force | Out-Null }; Set-ItemProperty -Path '${psPath}' -Name '${nameVar}' -Value '${escapedValue}'`;
 }
