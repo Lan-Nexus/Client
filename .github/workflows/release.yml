@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - "v*.*.*" # Triggers on version tags like v1.0.0, v1.2.3, etc.
+  pull_request:
+    branches:
+      - main
+      - master
 
 permissions:
   contents: write
@@ -30,10 +34,16 @@ jobs:
       - name: Extract version from tag
         id: get_version
         run: |
-          $tagName = "${{ github.ref_name }}"
-          $version = $tagName -replace '^v', ''
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-          echo "Extracted version: $version"
+          if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref }}" -like "refs/tags/*") {
+            $tagName = "${{ github.ref_name }}"
+            $version = $tagName -replace '^v', ''
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+            echo "Extracted version: $version"
+          } else {
+            $version = "0.0.0-dev"
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+            echo "Using development version: $version"
+          }
 
       - name: Update package.json version (temporary for build)
         run: |
@@ -42,29 +52,36 @@ jobs:
           $packageJson.version = $version
           $packageJson | ConvertTo-Json -Depth 10 | Set-Content package.json
           echo "Updated package.json version to: $version (temporary for build only)"
-        working-directory: client
 
       - name: Install client dependencies
         run: npm ci
-        working-directory: client
 
       - name: Build Electron app
         run: npm run build:win
-        working-directory: client
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Zip Client Build
         run: |
-          Compress-Archive -Path dist/*.exe,dist/*.yml -DestinationPath ../client-build.zip
-        working-directory: client
+          Compress-Archive -Path dist/*.exe,dist/*.yml -DestinationPath client-build.zip
 
-      - name: Upload release assets
+      - name: Upload build artifacts (PR only)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-build-pr-${{ github.event.number }}
+          path: |
+            client-build.zip
+            dist/*.exe
+            dist/*.yml
+
+      - name: Upload release assets (Tag only)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
             client-build.zip
-            client/dist/*.exe
-            client/dist/*.yml
+            dist/*.exe
+            dist/*.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
