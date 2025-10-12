@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faCog, faArrowsRotate, faGamepad } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faArrowsRotate, faGamepad, faCalendarDays } from '@fortawesome/free-solid-svg-icons';
 
 import { useGameStore } from '../stores/useGameStore.js';
 import { useAvatarStore } from '@renderer/stores/useAvatarStore.js';
@@ -30,6 +30,14 @@ const gameStore = useGameStore();
       @click="$router.push('/')"
     >
       <FontAwesomeIcon :icon="faGamepad" class="text-2xl" />
+    </button>
+
+    <button
+      class="btn"
+      :class="{ 'btn-secondary': $route.fullPath === '/calendar' }"
+      @click="$router.push('/calendar')"
+    >
+      <FontAwesomeIcon :icon="faCalendarDays" class="text-2xl" />
     </button>
 
     <button
