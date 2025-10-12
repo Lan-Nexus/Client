@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useCalendarStore } from '../stores/useCalendarStore.js';
 import GameHero from '../components/GameHero.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -8,9 +8,39 @@ import { faCalendarDay, faClock, faUsers, faGamepad } from '@fortawesome/free-so
 const calendarStore = useCalendarStore();
 const selectedDate = ref(new Date().toISOString().split('T')[0]);
 const viewMode = ref<'calendar' | 'list'>('calendar');
+const currentTime = ref(new Date());
+
+let updateInterval: NodeJS.Timeout;
+let dataRefreshInterval: NodeJS.Timeout;
 
 onMounted(() => {
   calendarStore.loadScheduledGames();
+  
+  // Update time-based statuses every minute (lightweight)
+  updateInterval = setInterval(() => {
+    currentTime.value = new Date(); // Update reactive time reference
+    calendarStore.refreshTimeBasedStatus();
+    
+    // Update selected date to today if it's currently selected and we've crossed midnight
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate.value === new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]) {
+      selectedDate.value = today;
+    }
+  }, 60000); // Every minute
+  
+  // Refresh data from server every 5 minutes
+  dataRefreshInterval = setInterval(() => {
+    calendarStore.loadScheduledGames();
+  }, 300000); // Every 5 minutes
+});
+
+onUnmounted(() => {
+  if (updateInterval) {
+    clearInterval(updateInterval);
+  }
+  if (dataRefreshInterval) {
+    clearInterval(dataRefreshInterval);
+  }
 });
 
 const formatTime = (dateString: string) => {
@@ -26,7 +56,7 @@ const formatDate = (dateString: string) => {
 };
 
 const getStatusBadge = (game: any) => {
-  const now = new Date();
+  const now = currentTime.value;
   const start = new Date(game.startTime);
   const end = new Date(game.endTime);
   
@@ -69,12 +99,13 @@ const calendarDays = computed((): CalendarDay[] => {
   
   const days: CalendarDay[] = [];
   const currentDate = new Date(startDate);
+  const todayStr = currentTime.value.toISOString().split('T')[0]; // Use reactive current time
   
   for (let i = 0; i < 42; i++) {
     const dateStr = currentDate.toISOString().split('T')[0];
     const gamesForDay = calendarStore.gamesByDate[dateStr] || [];
     const isCurrentMonth = currentDate.getMonth() === month;
-    const isToday = dateStr === new Date().toISOString().split('T')[0];
+    const isToday = dateStr === todayStr; // Use reactive today string
     const isSelected = dateStr === selectedDate.value;
     
     days.push({
@@ -89,7 +120,6 @@ const calendarDays = computed((): CalendarDay[] => {
     
     currentDate.setDate(currentDate.getDate() + 1);
   }
-  debugger;
   return days;
 });
 
@@ -113,8 +143,8 @@ const getMonthName = (month: number) => {
 </script>
 
 <template>
-  <div class="calendar-view w-full min-h-screen p-4 md:p-6 overflow-y-auto">
-    <div class="max-w-7xl mx-auto w-full">
+  <div class="calendar-view w-full  min-h-screen p-4 md:p-6 overflow-y-auto">
+    <div class="max-w-7xl mx-auto w-full pb-10">
       <!-- Hero Section -->
       <GameHero />
       

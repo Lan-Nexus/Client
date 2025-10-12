@@ -85,6 +85,12 @@ export const useCalendarStore = defineStore('calendar', {
             this.currentGame = this.currentlyPlaying || null;
         },
 
+        // Light refresh method that only updates time-based status without API calls
+        refreshTimeBasedStatus() {
+            this.updateCurrentGame();
+            // This will trigger reactivity in computed getters like upcomingGames, completedGames, etc.
+        },
+
         async getMockData(): Promise<ScheduledGame[]> {
             // Mock data for demonstration
             const now = new Date();
