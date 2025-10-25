@@ -22,13 +22,22 @@
             <!-- Editable User Name -->
             <div class="bg-base-300 rounded-lg p-4">
               <div class="text-sm text-base-content/70 mb-1">User Name</div>
-              <input
-                v-model="authStore.username"
-                @blur="updateUsername"
-                type="text"
-                class="input input-bordered w-full"
-                placeholder="Enter your name"
-              />
+              <div class="relative">
+                <input
+                  v-model="authStore.username"
+                  @blur="updateUsername"
+                  type="text"
+                  class="input input-bordered w-full"
+                  placeholder="Enter your name"
+                  :disabled="isUpdatingUsername"
+                />
+                <div v-if="isUpdatingUsername" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span class="loading loading-spinner loading-sm"></span>
+                </div>
+              </div>
+              <div v-if="usernameUpdateMessage" class="text-sm mt-2" :class="usernameUpdateSuccess ? 'text-success' : 'text-error'">
+                {{ usernameUpdateMessage }}
+              </div>
             </div>
 
             <!-- Read-only Client ID -->
@@ -195,6 +204,9 @@ const serverAddressStore = useServerAddressStore()
 const authStore = useAuthStore()
 
 const clientIp = ref('')
+const isUpdatingUsername = ref(false)
+const usernameUpdateMessage = ref('')
+const usernameUpdateSuccess = ref(false)
 const logHistory = ref([])
 const logContainer = ref(null)
 let pollInterval = null
@@ -260,8 +272,39 @@ function installUpdate() {
 }
 
 // Update username on blur
-function updateUsername() {
-  authStore.setUsername(authStore.username)
+async function updateUsername() {
+  if (!authStore.username.trim()) {
+    usernameUpdateMessage.value = 'Username cannot be empty'
+    usernameUpdateSuccess.value = false
+    return
+  }
+
+  isUpdatingUsername.value = true
+  usernameUpdateMessage.value = ''
+
+  try {
+    authStore.setUsername(authStore.username.trim())
+    await authStore.updateUserOnServer()
+    usernameUpdateMessage.value = 'Username updated successfully'
+    usernameUpdateSuccess.value = true
+    console.log('Username updated on server')
+
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      usernameUpdateMessage.value = ''
+    }, 3000)
+  } catch (error) {
+    console.error('Failed to update username on server:', error)
+    usernameUpdateMessage.value = 'Failed to update username on server'
+    usernameUpdateSuccess.value = false
+
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      usernameUpdateMessage.value = ''
+    }, 5000)
+  } finally {
+    isUpdatingUsername.value = false
+  }
 }
 
 onMounted(async () => {
