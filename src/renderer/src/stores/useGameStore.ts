@@ -42,8 +42,6 @@ export const useGameStore = defineStore('game', {
       setInterval(() => {
         logger.log('Refreshing games...');
         this.loadGames();
-
-
       }, refreshRate);
     },
 
