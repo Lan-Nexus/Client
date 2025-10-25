@@ -67,21 +67,15 @@ export async function updateUser(serverAddress: string, clientId: string, name: 
 }
 
 export function generateFakeName(): string {
-  const firstNames = [
-    'Alex', 'Jordan', 'Taylor', 'Casey', 'Morgan', 'Riley', 'Quinn', 'Drew',
-    'Blake', 'Cameron', 'Avery', 'Sage', 'River', 'Rowan', 'Skyler', 'Parker',
-    'Emery', 'Finley', 'Hayden', 'Jamie', 'Logan', 'Reese', 'Sam', 'Dakota'
+  const gamerNames = [
+    'ShadowStrike', 'NoobSlayer', 'PixelWarrior', 'GamerGod', 'ProPlayer', 'EliteSniper', 'RageQuit', 'PwnMaster',
+    'LootGoblin', 'HeadshotKing', 'CriticalHit', 'RespawnHero', 'FragMaster', 'BossRaid', 'ComboBreaker', 'SkillShot',
+    'NightRaven', 'BlazeFury', 'IceCold', 'ThunderBolt', 'DragonSlayer', 'PhoenixRise', 'SteelWolf', 'VoidHunter',
+    'CyberNinja', 'NeonGhost', 'QuantumLeap', 'TurboBoost', 'HyperDrive', 'LaserBeam', 'RocketJump', 'PowerCore',
+    'AceSniper', 'AlphaWolf', 'BetaTester', 'GammaRay', 'DeltaForce', 'EpsilonStrike', 'ZetaHacker', 'OmegaEnd',
+    'DeathBringer', 'LifeSaver', 'SoulReaper', 'MindBender', 'TimeWarp', 'SpaceRanger', 'StarCrusher', 'MoonWalker'
   ];
 
-  const lastNames = [
-    'Smith', 'Johnson', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor',
-    'Anderson', 'Thomas', 'Jackson', 'White', 'Harris', 'Martin', 'Thompson',
-    'Garcia', 'Martinez', 'Robinson', 'Clark', 'Rodriguez', 'Lewis', 'Lee',
-    'Walker', 'Hall', 'Allen', 'Young', 'King', 'Wright', 'Lopez', 'Hill'
-  ];
-
-  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-
-  return `${firstName} ${lastName}`;
+  const randomIndex = Math.floor(Math.random() * gamerNames.length);
+  return gamerNames[randomIndex];
 }
