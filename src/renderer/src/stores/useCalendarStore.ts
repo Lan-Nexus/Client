@@ -47,7 +47,11 @@ export const useCalendarStore = defineStore('calendar', {
         gamesByDate: (state) => {
             const grouped = {} as Record<string, ScheduledGame[]>;
             state.scheduledGames.forEach((game) => {
-                const date = new Date(game.startTime).toISOString().split('T')[0];
+                const gameDate = new Date(game.startTime);
+                const year = gameDate.getFullYear();
+                const month = String(gameDate.getMonth() + 1).padStart(2, '0');
+                const day = String(gameDate.getDate()).padStart(2, '0');
+                const date = `${year}-${month}-${day}`;
                 if (!grouped[date]) {
                     grouped[date] = [];
                 }

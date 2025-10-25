@@ -6,7 +6,16 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faCalendarDay, faClock, faUsers, faGamepad } from '@fortawesome/free-solid-svg-icons';
 
 const calendarStore = useCalendarStore();
-const selectedDate = ref(new Date().toISOString().split('T')[0]);
+
+// Helper function to get local date string (YYYY-MM-DD) without timezone conversion
+const getLocalDateString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const selectedDate = ref(getLocalDateString(new Date()));
 const viewMode = ref<'calendar' | 'list'>('calendar');
 const currentTime = ref(new Date());
 
@@ -22,8 +31,9 @@ onMounted(() => {
     calendarStore.refreshTimeBasedStatus();
     
     // Update selected date to today if it's currently selected and we've crossed midnight
-    const today = new Date().toISOString().split('T')[0];
-    if (selectedDate.value === new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]) {
+    const today = getLocalDateString(new Date());
+    const yesterday = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    if (selectedDate.value === yesterday) {
       selectedDate.value = today;
     }
   }, 60000); // Every minute
@@ -72,7 +82,7 @@ const getStatusBadge = (game: any) => {
 // Calendar grid logic
 const currentMonth = computed(() => {
   const date = new Date(selectedDate.value);
-  return date.getMonth();
+  return date.getMonth() ;
 });
 
 const currentYear = computed(() => {
@@ -95,14 +105,19 @@ const calendarDays = computed((): CalendarDay[] => {
   const month = currentMonth.value;
   const firstDay = new Date(year, month, 1);
   const startDate = new Date(firstDay);
-  startDate.setDate(startDate.getDate() - firstDay.getDay());
+  
+  // Get the day of week for the first day (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const firstDayOfWeek = firstDay.getDay();
+  // Calculate offset for Monday-based week (Monday = 0, Tuesday = 1, ..., Sunday = 6)
+  const mondayOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+  startDate.setDate(startDate.getDate() - mondayOffset);
   
   const days: CalendarDay[] = [];
   const currentDate = new Date(startDate);
-  const todayStr = currentTime.value.toISOString().split('T')[0]; // Use reactive current time
+  const todayStr = getLocalDateString(currentTime.value); // Use reactive current time with local date
   
   for (let i = 0; i < 42; i++) {
-    const dateStr = currentDate.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(currentDate);
     const gamesForDay = calendarStore.gamesByDate[dateStr] || [];
     const isCurrentMonth = currentDate.getMonth() === month;
     const isToday = dateStr === todayStr; // Use reactive today string
@@ -111,7 +126,7 @@ const calendarDays = computed((): CalendarDay[] => {
     days.push({
       date: new Date(currentDate),
       dateStr,
-      day: currentDate.getDate() -1,
+      day: currentDate.getDate(),
       isCurrentMonth,
       isToday,
       isSelected,
@@ -130,7 +145,7 @@ const selectedDateGames = computed(() => {
 const navigateMonth = (direction: number) => {
   const date = new Date(selectedDate.value);
   date.setMonth(date.getMonth() + direction);
-  selectedDate.value = date.toISOString().split('T')[0];
+  selectedDate.value = getLocalDateString(date);
 };
 
 const selectDate = (dateStr: string) => {
@@ -193,7 +208,7 @@ const getMonthName = (month: number) => {
           <!-- Calendar Grid -->
           <div class="calendar-grid grid grid-cols-7 gap-0 w-full border border-base-300 rounded-lg overflow-hidden">
             <!-- Day Headers -->
-            <div v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" 
+            <div v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']" 
                  :key="day" 
                  class="text-center text-sm font-semibold p-2 text-base-content/70 bg-base-200 border-r border-base-300 last:border-r-0">
               {{ day }}
