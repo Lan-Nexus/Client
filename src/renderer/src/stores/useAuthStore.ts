@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import functions from '../functions.js';
 
 function getLocalStorage(key: string, defaultValue: string = ''): string {
   if (typeof window !== 'undefined') {
@@ -13,23 +14,15 @@ function setLocalStorage(key: string, value: string) {
   }
 }
 
-function getOrCreateClientId(): string {
-  if (typeof window !== 'undefined') {
-    let clientId = localStorage.getItem('clientId');
-    if (!clientId) {
-      clientId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('clientId', clientId);
-    }
-    return clientId;
-  }
-  return '';
+async function getOrCreateClientId() {
+  return await functions.getMachineId();
 }
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     username: getLocalStorage('username'),
     seatNumber: getLocalStorage('seatNumber'),
-    clientId: getOrCreateClientId()
+    clientId: '' // initialize empty, will populate asynchronously
   }),
   getters: {
     getUsername: (state) => state.username,
@@ -45,9 +38,8 @@ export const useAuthStore = defineStore('auth', {
       this.seatNumber = seatNumber;
       setLocalStorage('seatNumber', seatNumber);
     },
-    setClientId(clientId: string) {
-      this.clientId = clientId;
-      setLocalStorage('clientId', clientId);
+    async fetchClientId() {
+      this.clientId = await getOrCreateClientId();
     }
   }
 });

@@ -88,9 +88,10 @@ export const useGameStore = defineStore('game', {
     async reserveGameKey(gameId: number) {
       const serverAddressStore = useServerAddressStore();
       const authStore = useAuthStore();
+      await authStore.fetchClientId();
       const alerts = useAlerts();
       try {
-        const data = await reserveGameKey(serverAddressStore.serverAddress!, gameId, authStore.clientId);
+        const data = await reserveGameKey(serverAddressStore.serverAddress!, gameId, authStore.getClientId);
         logger.log('Game key reserved:', data);
         return data;
       } catch (error) {
@@ -176,8 +177,10 @@ export const useGameStore = defineStore('game', {
       const serverAddressStore = useServerAddressStore();
       const authStore = useAuthStore();
       const alerts = useAlerts();
+      await authStore.fetchClientId();
+
       try {
-        const gamesData = await apiLoadGames(serverAddressStore.serverAddress!, authStore.clientId);
+        const gamesData = await apiLoadGames(serverAddressStore.serverAddress!, authStore.getClientId);
         this.games = await this._addInstallStatusToGames(gamesData);
       } catch (error) {
         logger.error('Failed to load games:', error);
@@ -274,5 +277,3 @@ export const useGameStore = defineStore('game', {
 setInterval(() => {
   useGameStore().watchIfGameStopped();
 }, 1000);
-
-
