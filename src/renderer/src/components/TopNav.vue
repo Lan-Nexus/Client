@@ -52,7 +52,7 @@ const gameStore = useGameStore();
     <button class="btn btn-ghost text-neutral-content">
       <font-awesome-icon :icon="faArrowsRotate" class="text-2xl" @click="gameStore.reload" />
     </button>
-    <div hidden>
+    <div>
       <button
         class="btn btn-ghost text-neutral-content"
         @click="$router.push('/avatar')"
@@ -63,7 +63,7 @@ const gameStore = useGameStore();
           alt="Avatar"
           class="w-10 h-10"
         />
-      </button> 
+      </button>
     </div>
   </div>
 </template>

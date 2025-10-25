@@ -78,10 +78,46 @@ watch([backgroundColor, eyes, cheeks, mouth, nose], updateAvatar, { immediate: t
 // Bind userName and seatNumber to the store
 const userName = ref(auth.getUsername);
 const seatNumber = ref(auth.getSeatNumber);
+const isUpdatingUsername = ref(false);
+const usernameUpdateMessage = ref('');
+const usernameUpdateSuccess = ref(false);
 
-watch(userName, (val) => {
-  auth.setUsername(val);
-});
+// Update username on server when changed
+async function updateUsername() {
+  if (!userName.value.trim()) {
+    usernameUpdateMessage.value = 'Username cannot be empty';
+    usernameUpdateSuccess.value = false;
+    return;
+  }
+
+  isUpdatingUsername.value = true;
+  usernameUpdateMessage.value = '';
+
+  try {
+    auth.setUsername(userName.value.trim());
+    await auth.updateUserOnServer();
+    usernameUpdateMessage.value = 'Username updated successfully';
+    usernameUpdateSuccess.value = true;
+    console.log('Username updated on server');
+
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      usernameUpdateMessage.value = '';
+    }, 3000);
+  } catch (error) {
+    console.error('Failed to update username on server:', error);
+    usernameUpdateMessage.value = 'Failed to update username on server';
+    usernameUpdateSuccess.value = false;
+
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      usernameUpdateMessage.value = '';
+    }, 5000);
+  } finally {
+    isUpdatingUsername.value = false;
+  }
+}
+
 watch(seatNumber, (val) => {
   auth.setSeatNumber(val);
 });
@@ -145,14 +181,25 @@ const clientId = ref(auth.getClientId ?? 'unknown');
     </div>
     <div class="flex flex-col w-full h-screen p-8">
       <div class="flex gap-4 w-full mb-4">
-        <label class="form-control w-full max-w-xs">
+        <div class="form-control w-full max-w-xs">
           <div class="label"><span class="label-text">Name</span></div>
-          <input v-model="userName" type="text" placeholder="Enter your name" class="input input-bordered w-full max-w-xs" />
-        </label>
-        <label class="form-control w-24">
-          <div class="label"><span class="label-text">Seat #</span></div>
-          <input v-model="seatNumber" type="text" placeholder="Seat" class="input input-bordered w-full" />
-        </label>
+          <div class="relative">
+            <input
+              v-model="userName"
+              @blur="updateUsername"
+              type="text"
+              placeholder="Enter your name"
+              class="input input-bordered w-full max-w-xs"
+              :disabled="isUpdatingUsername"
+            />
+            <div v-if="isUpdatingUsername" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <span class="loading loading-spinner loading-sm"></span>
+            </div>
+          </div>
+          <div v-if="usernameUpdateMessage" class="text-sm mt-1" :class="usernameUpdateSuccess ? 'text-success' : 'text-error'">
+            {{ usernameUpdateMessage }}
+          </div>
+        </div>
       </div>
       <div class="relative flex flex-col items-center justify-center flex-1">
         <img :src="avatar" alt="Avatar" class="w-64 h-64 rounded-2xl shadow-lg bg-white mx-auto block" />
