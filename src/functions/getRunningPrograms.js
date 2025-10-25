@@ -29,7 +29,7 @@ export default function getRunningPrograms() {
             let programs;
 
             if (process.platform === 'win32') {
-                const lines = stdout.split('\n').slice(3);
+                const lines = stdout.split('\r\n').slice(3);
                 programs = lines
                     .map(line => line.substring(0, 25).trim())
                     .filter(name => name && name !== '');
