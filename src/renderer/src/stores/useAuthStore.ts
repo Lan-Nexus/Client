@@ -1,4 +1,10 @@
 import { defineStore } from 'pinia';
+import functions from '../functions.js';
+import { createUser, updateUser, generateFakeName } from '../utils/api.js';
+import { useServerAddressStore } from './useServerAddress.js';
+import Logger from '../utils/logger.js';
+
+const logger = Logger('auth');
 
 function getLocalStorage(key: string, defaultValue: string = ''): string {
   if (typeof window !== 'undefined') {
@@ -13,23 +19,16 @@ function setLocalStorage(key: string, value: string) {
   }
 }
 
-function getOrCreateClientId(): string {
-  if (typeof window !== 'undefined') {
-    let clientId = localStorage.getItem('clientId');
-    if (!clientId) {
-      clientId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('clientId', clientId);
-    }
-    return clientId;
-  }
-  return '';
+async function getOrCreateClientId() {
+  return await functions.getMachineId();
 }
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     username: getLocalStorage('username'),
     seatNumber: getLocalStorage('seatNumber'),
-    clientId: getOrCreateClientId()
+    clientId: '', // initialize empty, will populate asynchronously
+    userCreated: false
   }),
   getters: {
     getUsername: (state) => state.username,
@@ -45,9 +44,75 @@ export const useAuthStore = defineStore('auth', {
       this.seatNumber = seatNumber;
       setLocalStorage('seatNumber', seatNumber);
     },
-    setClientId(clientId: string) {
-      this.clientId = clientId;
-      setLocalStorage('clientId', clientId);
+    async fetchClientId() {
+      this.clientId = await getOrCreateClientId();
+    },
+    async initializeUser() {
+      try {
+        // Ensure we have a client ID
+        if (!this.clientId) {
+          await this.fetchClientId();
+        }
+
+        // Get server address
+        const serverAddressStore = useServerAddressStore();
+        const serverAddress = await serverAddressStore.getServerAddress();
+
+        if (!serverAddress) {
+          logger.log('No server address available, skipping user creation');
+          return;
+        }
+
+        // Check if we already have a username, if not generate one
+        if (!this.username) {
+          const fakeName = generateFakeName();
+          this.setUsername(fakeName);
+          logger.log('Generated fake name:', fakeName);
+        }
+
+        // Create user on the server
+        if (!this.userCreated) {
+          await this.createUserOnServer();
+        }
+      } catch (error) {
+        logger.log('Error initializing user:', error);
+      }
+    },
+    async createUserOnServer() {
+      try {
+        const serverAddressStore = useServerAddressStore();
+        const serverAddress = await serverAddressStore.getServerAddress();
+
+        if (!serverAddress || !this.clientId || !this.username) {
+          logger.log('Missing required data for user creation');
+          return;
+        }
+
+        const response = await createUser(serverAddress, this.username, this.clientId);
+        logger.log('User created on server:', response);
+        this.userCreated = true;
+      } catch (error) {
+        logger.log('Error creating user on server:', error);
+        // Don't throw the error, just log it
+      }
+    },
+    async updateUserOnServer() {
+      try {
+        const serverAddressStore = useServerAddressStore();
+        const serverAddress = await serverAddressStore.getServerAddress();
+
+        if (!serverAddress || !this.clientId || !this.username) {
+          logger.log('Missing required data for user update');
+          return;
+        }
+
+        const response = await updateUser(serverAddress, this.clientId, this.username);
+        logger.log('User updated on server:', response);
+        return response;
+      } catch (error) {
+        logger.log('Error updating user on server:', error);
+        throw error;
+      }
     }
   }
 });

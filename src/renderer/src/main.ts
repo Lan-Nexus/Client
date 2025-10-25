@@ -58,4 +58,3 @@ function waitForElectronAndStart() {
 }
 
 document.addEventListener('DOMContentLoaded', waitForElectronAndStart);
-

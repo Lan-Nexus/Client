@@ -33,4 +33,49 @@ export async function getIpAddress(serverAddress: string) {
     },
   });
   return response.data.ip;
-} 
+}
+
+export async function createUser(serverAddress: string, name: string, clientId: string) {
+  const response = await axios.post(
+    `${serverAddress}/api/users`,
+    {
+      name,
+      clientId,
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  return response.data;
+}
+
+export async function updateUser(serverAddress: string, clientId: string, name: string) {
+  const response = await axios.patch(
+    `${serverAddress}/api/users/update-by-client-id/${clientId}`,
+    {
+      name,
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  return response.data;
+}
+
+export function generateFakeName(): string {
+  const gamerNames = [
+    'ShadowStrike', 'NoobSlayer', 'PixelWarrior', 'GamerGod', 'ProPlayer', 'EliteSniper', 'RageQuit', 'PwnMaster',
+    'LootGoblin', 'HeadshotKing', 'CriticalHit', 'RespawnHero', 'FragMaster', 'BossRaid', 'ComboBreaker', 'SkillShot',
+    'NightRaven', 'BlazeFury', 'IceCold', 'ThunderBolt', 'DragonSlayer', 'PhoenixRise', 'SteelWolf', 'VoidHunter',
+    'CyberNinja', 'NeonGhost', 'QuantumLeap', 'TurboBoost', 'HyperDrive', 'LaserBeam', 'RocketJump', 'PowerCore',
+    'AceSniper', 'AlphaWolf', 'BetaTester', 'GammaRay', 'DeltaForce', 'EpsilonStrike', 'ZetaHacker', 'OmegaEnd',
+    'DeathBringer', 'LifeSaver', 'SoulReaper', 'MindBender', 'TimeWarp', 'SpaceRanger', 'StarCrusher', 'MoonWalker'
+  ];
+
+  const randomIndex = Math.floor(Math.random() * gamerNames.length);
+  return gamerNames[randomIndex];
+}

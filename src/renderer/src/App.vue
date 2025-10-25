@@ -2,6 +2,7 @@
 import Progress from './components/Progress.vue';
 import TopNav from './components/TopNav.vue';
 import { useServerAddressStore } from './stores/useServerAddress.js';
+import { useAuthStore } from './stores/useAuthStore.js';
 import Loading from './components/Loading.vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import Alert from './components/Alert.vue';
@@ -15,8 +16,7 @@ store.listenForIpcEvents();
 const serverAddressStore = useServerAddressStore();
 serverAddressStore.getServerAddress();
 
-
-
+const authStore = useAuthStore();
 
 const runningStore = useRunningStore();
 runningStore.init();
@@ -24,8 +24,21 @@ runningStore.init();
 const gameStore = useGameStore();
 gameStore.autoRefreshGames();
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener("keyup", keyHandler);
+
+  // Initialize user after server address is available
+  if (serverAddressStore.serverAddress) {
+    await authStore.initializeUser();
+  } else {
+    // Wait for server address to be available, then initialize user
+    const checkServer = setInterval(async () => {
+      if (serverAddressStore.serverAddress) {
+        clearInterval(checkServer);
+        await authStore.initializeUser();
+      }
+    }, 100);
+  }
 });
 
 onUnmounted(() => {
