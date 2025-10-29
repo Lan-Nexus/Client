@@ -167,11 +167,29 @@
                       <label class="label">
                         <span class="label-text font-medium">Eyes Style</span>
                       </label>
-                      <select v-model="avatarOptions.eyes" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in eyesOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="eye in eyePreviews"
+                          :key="eye.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.eyes = eye.value; updateAvatar()"
+                          :title="eye.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.eyes === eye.value, 'border-transparent': avatarOptions.eyes !== eye.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="eye.previewUrl" :alt="eye.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Eyebrows -->
@@ -179,11 +197,29 @@
                       <label class="label">
                         <span class="label-text font-medium">Eyebrows</span>
                       </label>
-                      <select v-model="avatarOptions.eyebrows" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in eyebrowsOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="eyebrow in eyebrowPreviews"
+                          :key="eyebrow.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.eyebrows = eyebrow.value; updateAvatar()"
+                          :title="eyebrow.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.eyebrows === eyebrow.value, 'border-transparent': avatarOptions.eyebrows !== eyebrow.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="eyebrow.previewUrl" :alt="eyebrow.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Mouth -->
@@ -191,11 +227,29 @@
                       <label class="label">
                         <span class="label-text font-medium">Mouth Expression</span>
                       </label>
-                      <select v-model="avatarOptions.mouth" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in mouthOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="mouth in mouthPreviews"
+                          :key="mouth.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.mouth = mouth.value; updateAvatar()"
+                          :title="mouth.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.mouth === mouth.value, 'border-transparent': avatarOptions.mouth !== mouth.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="mouth.previewUrl" :alt="mouth.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Skin Color -->
@@ -203,11 +257,29 @@
                       <label class="label">
                         <span class="label-text font-medium">Skin Tone</span>
                       </label>
-                      <select v-model="avatarOptions.skinColor" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in skinColorOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="skin in skinColorPreviews"
+                          :key="skin.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.skinColor = skin.value; updateAvatar()"
+                          :title="skin.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.skinColor === skin.value, 'border-transparent': avatarOptions.skinColor !== skin.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="skin.previewUrl" :alt="skin.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -220,16 +292,34 @@
                   </div>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Hair Type -->
+                    <!-- Hairstyle -->
                     <div class="form-control">
                       <label class="label">
                         <span class="label-text font-medium">Hairstyle</span>
                       </label>
-                      <select v-model="avatarOptions.hair" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in hairOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="hair in hairPreviews"
+                          :key="hair.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.hair = hair.value; updateAvatar()"
+                          :title="hair.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.hair === hair.value, 'border-transparent': avatarOptions.hair !== hair.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="hair.previewUrl" :alt="hair.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Hair Color -->
@@ -237,11 +327,29 @@
                       <label class="label">
                         <span class="label-text font-medium">Hair Color</span>
                       </label>
-                      <select v-model="avatarOptions.hairColor" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in hairColorOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="hairColor in hairColorPreviews"
+                          :key="hairColor.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.hairColor = hairColor.value; updateAvatar()"
+                          :title="hairColor.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.hairColor === hairColor.value, 'border-transparent': avatarOptions.hairColor !== hairColor.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="hairColor.previewUrl" :alt="hairColor.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -259,11 +367,29 @@
                       <label class="label">
                         <span class="label-text font-medium">Glasses</span>
                       </label>
-                      <select v-model="avatarOptions.glasses" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in glassesOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="glasses in glassesPreviews"
+                          :key="glasses.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.glasses = glasses.value; updateAvatar()"
+                          :title="glasses.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.glasses === glasses.value, 'border-transparent': avatarOptions.glasses !== glasses.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="glasses.previewUrl" :alt="glasses.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Earrings -->
@@ -271,11 +397,29 @@
                       <label class="label">
                         <span class="label-text font-medium">Earrings</span>
                       </label>
-                      <select v-model="avatarOptions.earrings" @change="updateAvatar" class="select select-bordered w-full">
-                        <option v-for="option in earringsOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </option>
-                      </select>
+                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                        <div
+                          v-for="earring in earringPreviews"
+                          :key="earring.value"
+                          class="cursor-pointer group"
+                          @click="avatarOptions.earrings = earring.value; updateAvatar()"
+                          :title="earring.label"
+                        >
+                          <div
+                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
+                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.earrings === earring.value, 'border-transparent': avatarOptions.earrings !== earring.value }"
+                          >
+                            <div class="card-body p-1 items-center">
+                              <div class="avatar">
+                                <div class="w-16 h-16 rounded-full">
+                                  <img :src="earring.previewUrl" :alt="earring.label" class="rounded-full" />
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -303,6 +447,7 @@
         </div>
       </div>
     </div>
+    <div class="mb-32"></div>
   </div>
 </template>
 
@@ -739,6 +884,142 @@ const currentAvatarUrl = computed(() => {
   return generateAvatar(avatarOptions.value)
 })
 
+// Generate preview images for each hair option
+const hairPreviews = computed(() => {
+  return hairOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: 'variant01',
+      eyebrows: 'variant01',
+      mouth: 'variant01',
+      glasses: 'none',
+      earrings: 'none',
+      hair: option.value,
+      skinColor: 'f9e79f',
+      hairColor: defaultAvatarOptions.hairColor
+    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'earrings'])
+  }))
+})
+
+// Generate preview images for each eye option
+const eyePreviews = computed(() => {
+  return eyesOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: option.value,
+      eyebrows: 'variant01',
+      mouth: 'variant01',
+      glasses: 'none',
+      earrings: 'none',
+      hair: 'long01',
+      skinColor: 'f9e79f',
+      hairColor: '724133'
+    }, ['eyebrows', 'mouth', 'glasses', 'earrings', 'hair'])
+  }))
+})
+
+// Generate preview images for each eyebrow option
+const eyebrowPreviews = computed(() => {
+  return eyebrowsOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: 'variant01',
+      eyebrows: option.value,
+      mouth: 'variant01',
+      glasses: 'none',
+      earrings: 'none',
+      hair: 'long01',
+      skinColor: 'f9e79f',
+      hairColor: '724133'
+    }, ['eyes', 'mouth', 'glasses', 'earrings', 'hair'])
+  }))
+})
+
+// Generate preview images for each mouth option
+const mouthPreviews = computed(() => {
+  return mouthOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: 'variant01',
+      eyebrows: 'variant01',
+      mouth: option.value,
+      glasses: 'none',
+      earrings: 'none',
+      hair: 'long01',
+      skinColor: 'f9e79f',
+      hairColor: '724133'
+    }, ['eyes', 'eyebrows', 'glasses', 'earrings', 'hair'])
+  }))
+})
+
+// Generate preview images for each glasses option
+const glassesPreviews = computed(() => {
+  return glassesOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: 'variant01',
+      eyebrows: 'variant01',
+      mouth: 'variant01',
+      glasses: option.value,
+      earrings: 'none',
+      hair: 'long01',
+      skinColor: 'f9e79f',
+      hairColor: '724133'
+    }, ['mouth', 'earrings', 'hair'])
+  }))
+})
+
+// Generate preview images for each earring option
+const earringPreviews = computed(() => {
+  return earringsOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: 'variant01',
+      eyebrows: 'variant01',
+      mouth: 'variant01',
+      glasses: 'none',
+      earrings: option.value,
+      hair: 'long01',
+      skinColor: 'f9e79f',
+      hairColor: '724133'
+    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'hair'])
+  }))
+})
+
+// Generate preview images for each skin color option
+const skinColorPreviews = computed(() => {
+  return skinColorOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: 'variant01',
+      eyebrows: 'variant01',
+      mouth: 'variant01',
+      glasses: 'none',
+      earrings: 'none',
+      hair: 'long01',
+      skinColor: option.value,
+      hairColor: '724133'
+    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'earrings', 'hair'])
+  }))
+})
+
+// Generate preview images for each hair color option
+const hairColorPreviews = computed(() => {
+  return hairColorOptions.map(option => ({
+    ...option,
+    previewUrl: generateAvatar({
+      eyes: 'variant01',
+      eyebrows: 'variant01',
+      mouth: 'variant01',
+      glasses: 'none',
+      earrings: 'none',
+      hair: defaultAvatarOptions.hair,
+      skinColor: 'f9e79f',
+      hairColor: option.value
+    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'earrings'])
+  }))
+})
+
 const customizationPercentage = computed(() => {
   let changes = 0
   let total = 0
@@ -761,7 +1042,7 @@ const currentStyle = computed(() => {
 })
 
 // Methods
-function generateAvatar(options: AvatarOptions): string {
+function generateAvatar(options: AvatarOptions, hideElements?: string[]): string {
   try {
     if (!options || typeof options !== 'object') {
       throw new Error('Invalid avatar options provided')
@@ -778,14 +1059,32 @@ function generateAvatar(options: AvatarOptions): string {
       hairColor: [options.hairColor || '724133']
     }
 
+    // Hide elements by setting their probability to 0
+    if (hideElements) {
+      if (hideElements.includes('eyes')) avatarConfig.eyesProbability = 0
+      if (hideElements.includes('eyebrows')) avatarConfig.eyebrowsProbability = 0
+      if (hideElements.includes('mouth')) avatarConfig.mouthProbability = 0
+      if (hideElements.includes('hair')) {
+        avatarConfig.hairProbability = 0
+        avatarConfig.hairColor = ['transparent']
+      }
+      if (hideElements.includes('skinColor')) {
+        avatarConfig.skinColor = ['transparent']
+      }
+    }
+
     if (options.earrings && options.earrings !== 'none') {
       avatarConfig.earrings = [options.earrings]
       avatarConfig.earringsProbability = 100
+    } else if (hideElements?.includes('earrings')) {
+      avatarConfig.earringsProbability = 0
     }
 
     if (options.glasses && options.glasses !== 'none') {
       avatarConfig.glasses = [options.glasses]
       avatarConfig.glassesProbability = 100
+    } else if (hideElements?.includes('glasses')) {
+      avatarConfig.glassesProbability = 0
     }
 
     const avatar = createAvatar(adventurer, avatarConfig)
