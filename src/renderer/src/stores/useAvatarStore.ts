@@ -1,4 +1,6 @@
+import axios from 'axios';
 import { defineStore } from 'pinia';
+import { useServerAddressStore } from './useServerAddress.js';
 
 interface AvatarOptions {
   eyes: string;
@@ -9,6 +11,8 @@ interface AvatarOptions {
   hair: string;
   skinColor: string;
   hairColor: string;
+  backgroundColor?: string[];
+  backgroundType?: string[];
 }
 
 interface UserAvatar {
@@ -63,6 +67,28 @@ export const useAvatarStore = defineStore('avatar', {
       } catch (error) {
         console.error('Error loading avatar from localStorage:', error);
         this.currentAvatar = null;
+      }
+    },
+
+    async getAvatarFromApi(clientId:string) {
+      try{
+        const serverAddressStore = useServerAddressStore();
+        const response = await axios.get(`${serverAddressStore.serverAddress}/api/users/by-client-id/${clientId}`, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        this.currentAvatar = {
+          options: response.data.data.avatar,
+          username: response.data.data.name,
+          timestamp: Date.now()
+        }
+
+        this.saveToLocalStorage();
+      return;
+      }catch(error){
+        console.error('Error fetching avatar timestamp:', error);
+        return null;
       }
     },
 

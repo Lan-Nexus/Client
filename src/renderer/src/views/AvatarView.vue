@@ -489,6 +489,8 @@ interface AvatarOptions {
   hair: string
   skinColor: string
   hairColor: string
+  backgroundColor?: string[]
+  backgroundType?: string[]
 }
 
 interface PresetCharacter {
@@ -519,7 +521,9 @@ const avatarOptions = ref<AvatarOptions>({
   earrings: 'none',
   hair: 'long01',
   skinColor: 'fdbcb4',
-  hairColor: '724133'
+  hairColor: '724133',
+  backgroundColor: ['transparent'],
+  backgroundType: ['solid']
 })
 
 const savedAvatar = ref<SavedAvatar | null>(null)
@@ -536,7 +540,9 @@ const defaultAvatarOptions: AvatarOptions = {
   earrings: 'none',
   hair: 'long01',
   skinColor: 'fdbcb4',
-  hairColor: '724133'
+  hairColor: '724133',
+  backgroundColor: ['transparent'],
+  backgroundType: ['solid']
 }
 
 // Improved option labels
@@ -1047,16 +1053,16 @@ function generateAvatar(options: AvatarOptions, hideElements?: string[]): string
     if (!options || typeof options !== 'object') {
       throw new Error('Invalid avatar options provided')
     }
-
     const avatarConfig: any = {
       size: 128,
-      backgroundColor: ['transparent'],
       eyes: [options.eyes || 'variant01'],
       eyebrows: [options.eyebrows || 'variant01'],
       mouth: [options.mouth || 'variant01'],
       hair: [options.hair || 'long01'],
       skinColor: [options.skinColor || 'fdbcb4'],
-      hairColor: [options.hairColor || '724133']
+      hairColor: [options.hairColor || '724133'],
+      backgroundColor: options.backgroundColor || ['transparent'],
+      backgroundType: options.backgroundType || ['solid']
     }
 
     // Hide elements by setting their probability to 0
@@ -1146,7 +1152,9 @@ function randomizeAll(): void {
       earrings: getRandomOption(earringsOptions) as string,
       hair: getRandomOption(hairOptions) as string,
       skinColor: getRandomOption(skinColorOptions) as string,
-      hairColor: getRandomOption(hairColorOptions) as string
+      hairColor: getRandomOption(hairColorOptions) as string,
+      backgroundColor: ['ffffff'],
+      backgroundType: ['solid']
     }
 
     alerts.showSuccess({

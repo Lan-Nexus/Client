@@ -18,13 +18,15 @@ function generateAvatarFromOptions(options: any): string {
   try {
     const avatarConfig: any = {
       size: 48,
-      backgroundColor: ['transparent'],
+      backgroundColor: options.backgroundColor || ['transparent'],
+      backgroundType: options.backgroundType || ['solid'],
       eyes: [options.eyes],
       eyebrows: [options.eyebrows],
       mouth: [options.mouth],
       hairType: [options.hair],
       skinColor: [options.skinColor],
-      hairColor: [options.hairColor]
+      hairColor: [options.hairColor],
+      
     }
 
     // Add optional features
