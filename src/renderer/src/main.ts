@@ -24,10 +24,10 @@ declare global {
 }
 
 import App from './App.vue';
-import { router } from './router';
+import { router } from './router.js';
 import './assets/style.css';
 
-function startApp() {
+async function startApp() {
   const app = createApp(App);
   app.use(createPinia()).use(router);
   app.component('FontAwesomeIcon', FontAwesomeIcon);
@@ -38,9 +38,9 @@ function startApp() {
 
 }
 
-function waitForElectronAndStart() {
+async function waitForElectronAndStart() {
   if (window.electron) {
-    startApp();
+    await startApp();
   } else {
     // Poll every 50ms for up to 2 seconds
     let waited = 0;

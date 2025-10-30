@@ -221,7 +221,6 @@ export const useGameStore = defineStore('game', {
       }
       const safeName = game.gameID.replaceAll(' ', '-');
       try {
-        debugger;
         await functions.openFileLocation(safeName);
       } catch (error) {
         logger.error('Failed to open file location:', error);

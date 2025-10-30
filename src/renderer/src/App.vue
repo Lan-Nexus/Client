@@ -9,6 +9,7 @@ import Alert from './components/Alert.vue';
 import { useProgressStore } from './stores/useProgress';
 import { useRunningStore } from './stores/useRunning';
 import { useGameStore } from './stores/useGameStore';
+import { useAvatarStore } from './stores/useAvatarStore';
 
 const store = useProgressStore();
 store.listenForIpcEvents();
@@ -36,6 +37,8 @@ onMounted(async () => {
       if (serverAddressStore.serverAddress) {
         clearInterval(checkServer);
         await authStore.initializeUser();
+        const avatarStore = useAvatarStore();
+        await avatarStore.getAvatarFromApi(authStore.getClientId);
       }
     }, 100);
   }
@@ -77,9 +80,10 @@ function addServerAddress() {
     <div class="flex flex-col h-full w-full overflow-hidden">
       <TopNav />
       <Alert />
-      <div class="flex h-full w-full mt-18 bg-base-100">
+      <main id="frame" class="flex h-full w-full mt-18 mb-96 bg-base-100">
         <router-view />
-      </div>
+      </main>
+      <div></div>
       <Progress />
     </div>
   </template>

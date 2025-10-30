@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useCalendarStore } from '../stores/useCalendarStore.js';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPlay, faClock, faUsers } from '@fortawesome/free-solid-svg-icons';
@@ -7,23 +7,16 @@ import { faPlay, faClock, faUsers } from '@fortawesome/free-solid-svg-icons';
 const calendarStore = useCalendarStore();
 
 let updateInterval: NodeJS.Timeout;
-
-onMounted(() => {
-  calendarStore.loadScheduledGames();
-  // Update current game status every minute
-  updateInterval = setInterval(() => {
-    calendarStore.updateCurrentGame();
-  }, 60000);
-});
-
-onUnmounted(() => {
-  if (updateInterval) {
-    clearInterval(updateInterval);
-  }
-});
+let timeUpdateInterval: NodeJS.Timeout;
 
 const currentGame = computed(() => calendarStore.currentGame);
 const nextGame = computed(() => calendarStore.upcomingGames[0]);
+
+// Reactive countdown values
+const days = ref('0');
+const hours = ref('0');
+const minutes = ref('0');
+const seconds = ref('0');
 
 const formatTime = (dateString: string) => {
   return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -37,23 +30,72 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const getTimeRemaining = (dateString: string) => {
+const getTimeRemaining = (dateString: string): { days: string; hours: string; minutes: string; seconds: string } => {
   const now = new Date();
   const target = new Date(dateString);
   const diff = target.getTime() - now.getTime();
-  
-  if (diff <= 0) return 'Now';
-  
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
-};
-</script>
 
+  // If the target time has passed or is now, return zeros
+  if (diff <= 0) return { days: '0', hours: '0', minutes: '0', seconds: '0' };
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const daysValue = Math.floor(totalSeconds / 86400);
+  const hoursValue = Math.floor((totalSeconds % 86400) / 3600);
+  const minutesValue = Math.floor((totalSeconds % 3600) / 60);
+  const secondsValue = totalSeconds % 60;
+
+  return {
+    days: `${daysValue}`,
+    hours: `${hoursValue}`,
+    minutes: `${minutesValue}`,
+    seconds: `${secondsValue}`
+  };
+};
+
+const updateCountdown = () => {
+  if (nextGame.value?.startTime) {
+    const timeRemaining = getTimeRemaining(nextGame.value.startTime);
+    days.value = timeRemaining.days;
+    hours.value = timeRemaining.hours;
+    minutes.value = timeRemaining.minutes;
+    seconds.value = timeRemaining.seconds;
+  } else {
+    days.value = '0';
+    hours.value = '0';
+    minutes.value = '0';
+    seconds.value = '0';
+  }
+};
+
+// Watch for changes in nextGame and update countdown immediately
+watch(nextGame, () => {
+  updateCountdown();
+}, { immediate: true });
+
+onMounted(() => {
+  calendarStore.loadScheduledGames();
+  
+  // Update current game status every minute
+  updateInterval = setInterval(() => {
+    calendarStore.updateCurrentGame();
+  }, 60000);
+
+  // Update countdown every second
+  timeUpdateInterval = setInterval(() => {
+    updateCountdown();
+  }, 1000);
+});
+
+onUnmounted(() => {
+  if (updateInterval) {
+    clearInterval(updateInterval);
+  }
+  if (timeUpdateInterval) {
+    clearInterval(timeUpdateInterval);
+  }
+});
+
+</script>
 <template>
   <div class="hero-container mb-6">
     <!-- Current Game Hero -->
@@ -96,14 +138,33 @@ const getTimeRemaining = (dateString: string) => {
           <h1 class="mb-3 text-3xl font-bold">{{ nextGame.gameName }}</h1>
           <p class="mb-4">{{ nextGame.description }}</p>
           <div class="flex justify-center items-center gap-6 text-sm">
-            <div class="flex items-center gap-2">
-              <span class="font-semibold">{{ formatDate(nextGame.startTime) }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span>{{ formatTime(nextGame.startTime) }}</span>
-            </div>
-            <div class="flex items-center gap-2 text-primary font-semibold">
-              <span>Starts in {{ getTimeRemaining(nextGame.startTime) }}</span>
+            <div class="grid auto-cols-max grid-flow-col gap-5 text-center">
+              <template v-if="days != '0'">
+                <div class="flex flex-col">
+                  <span class="countdown font-mono text-5xl">
+                    <span :style="`--value:${days};`" aria-live="polite" aria-label="{{ days }}">{{ days }}</span>
+                  </span>
+                  days
+                </div>
+              </template>
+              <div class="flex flex-col">
+                <span class="countdown font-mono text-5xl">
+                  <span :style="`--value:${hours};`" aria-live="polite" aria-label="{{ hours }}">{{ hours }}</span>
+                </span>
+                hours
+              </div>
+              <div class="flex flex-col">
+                <span class="countdown font-mono text-5xl">
+                  <span :style="`--value:${minutes};`" aria-live="polite" aria-label="{{ minutes }}">{{ minutes }}</span>
+                </span>
+                min
+              </div>
+              <div class="flex flex-col">
+                <span class="countdown font-mono text-5xl">
+                  <span :style="`--value:${seconds};`" aria-live="polite" aria-label="{{ seconds }}">{{ seconds }}</span>
+                </span>
+                sec
+              </div>
             </div>
           </div>
           <div v-if="nextGame.participants" class="mt-3 flex items-center justify-center gap-2 text-sm">

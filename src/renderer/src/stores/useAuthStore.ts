@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import functions from '../functions.js';
 import { createUser, updateUser, generateFakeName } from '../utils/api.js';
 import { useServerAddressStore } from './useServerAddress.js';
+
 import Logger from '../utils/logger.js';
 
 const logger = Logger('auth');
@@ -45,7 +46,14 @@ export const useAuthStore = defineStore('auth', {
       setLocalStorage('seatNumber', seatNumber);
     },
     async fetchClientId() {
-      this.clientId = await getOrCreateClientId();
+      try {
+        console.log('Fetching client ID...');
+        this.clientId = await getOrCreateClientId();
+        console.log('Client ID fetched successfully:', this.clientId);
+      } catch (error) {
+        console.error('Error fetching client ID:', error);
+        throw error;
+      }
     },
     async initializeUser() {
       try {
@@ -88,7 +96,11 @@ export const useAuthStore = defineStore('auth', {
           return;
         }
 
-        const response = await createUser(serverAddress, this.username, this.clientId);
+        // Get current avatar if available
+        const avatarData = this.getCurrentAvatarOptions();
+        logger.log('Sending avatar options to server:', avatarData);
+
+        const response = await createUser(serverAddress, this.username, this.clientId, avatarData.options);
         logger.log('User created on server:', response);
         this.userCreated = true;
       } catch (error) {
@@ -102,16 +114,45 @@ export const useAuthStore = defineStore('auth', {
         const serverAddress = await serverAddressStore.getServerAddress();
 
         if (!serverAddress || !this.clientId || !this.username) {
-          logger.log('Missing required data for user update');
+          logger.log('Missing required data for user update:', {
+            serverAddress: !!serverAddress,
+            clientId: !!this.clientId,
+            username: !!this.username
+          });
           return;
         }
 
-        const response = await updateUser(serverAddress, this.clientId, this.username);
+        // Get current avatar if available
+        const avatarData = this.getCurrentAvatarOptions();
+        logger.log('Sending avatar options to server:', avatarData);
+
+        logger.log('Updating user on server with data:', {
+          serverAddress,
+          clientId: this.clientId,
+          username: this.username,
+          hasAvatar: !!avatarData
+        });
+
+        const response = await updateUser(serverAddress, this.clientId, this.username, avatarData.options);
         logger.log('User updated on server:', response);
         return response;
       } catch (error) {
         logger.log('Error updating user on server:', error);
         throw error;
+      }
+    },
+    getCurrentAvatarOptions(): any | null {
+      try {
+        const saved = localStorage.getItem('lan-nexus-current-avatar');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Return only the options part for the server
+          return parsed.options;
+        }
+        return null;
+      } catch (error) {
+        logger.log('Error getting current avatar options:', error);
+        return null;
       }
     }
   }
