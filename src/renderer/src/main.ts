@@ -26,19 +26,12 @@ declare global {
 import App from './App.vue';
 import { router } from './router.js';
 import './assets/style.css';
-import { useAvatarStore } from './stores/useAvatarStore.js';
-import { useAuthStore } from './stores/useAuthStore.js';
 
 async function startApp() {
   const app = createApp(App);
   app.use(createPinia()).use(router);
   app.component('FontAwesomeIcon', FontAwesomeIcon);
   app.mount('#app');
-
-  const authStore = useAuthStore()
-  const avatarStore = useAvatarStore();
-  await authStore.fetchClientId();
-  avatarStore.getAvatarFromApi(authStore.getClientId);
 
   // Example usage of the new bridge:
   // (You can remove this or adapt as needed)

@@ -9,6 +9,7 @@ import Alert from './components/Alert.vue';
 import { useProgressStore } from './stores/useProgress';
 import { useRunningStore } from './stores/useRunning';
 import { useGameStore } from './stores/useGameStore';
+import { useAvatarStore } from './stores/useAvatarStore';
 
 const store = useProgressStore();
 store.listenForIpcEvents();
@@ -36,6 +37,8 @@ onMounted(async () => {
       if (serverAddressStore.serverAddress) {
         clearInterval(checkServer);
         await authStore.initializeUser();
+        const avatarStore = useAvatarStore();
+        await avatarStore.getAvatarFromApi(authStore.getClientId);
       }
     }, 100);
   }
