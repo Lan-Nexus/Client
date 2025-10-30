@@ -77,9 +77,10 @@ function addServerAddress() {
     <div class="flex flex-col h-full w-full overflow-hidden">
       <TopNav />
       <Alert />
-      <div class="flex h-full w-full mt-18 bg-base-100">
+      <main id="frame" class="flex h-full w-full mt-18 mb-96 bg-base-100">
         <router-view />
-      </div>
+      </main>
+      <div></div>
       <Progress />
     </div>
   </template>

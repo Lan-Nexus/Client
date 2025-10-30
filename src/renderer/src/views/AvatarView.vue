@@ -895,15 +895,9 @@ const hairPreviews = computed(() => {
   return hairOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: 'variant01',
-      eyebrows: 'variant01',
-      mouth: 'variant01',
-      glasses: 'none',
-      earrings: 'none',
-      hair: option.value,
-      skinColor: 'f9e79f',
-      hairColor: defaultAvatarOptions.hairColor
-    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'earrings'])
+      ...avatarOptions.value,
+      hair: option.value
+    })
   }))
 })
 
@@ -912,15 +906,9 @@ const eyePreviews = computed(() => {
   return eyesOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: option.value,
-      eyebrows: 'variant01',
-      mouth: 'variant01',
-      glasses: 'none',
-      earrings: 'none',
-      hair: 'long01',
-      skinColor: 'f9e79f',
-      hairColor: '724133'
-    }, ['eyebrows', 'mouth', 'glasses', 'earrings', 'hair'])
+      ...avatarOptions.value,
+      eyes: option.value
+    })
   }))
 })
 
@@ -929,15 +917,9 @@ const eyebrowPreviews = computed(() => {
   return eyebrowsOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: 'variant01',
-      eyebrows: option.value,
-      mouth: 'variant01',
-      glasses: 'none',
-      earrings: 'none',
-      hair: 'long01',
-      skinColor: 'f9e79f',
-      hairColor: '724133'
-    }, ['eyes', 'mouth', 'glasses', 'earrings', 'hair'])
+      ...avatarOptions.value,
+      eyebrows: option.value
+    })
   }))
 })
 
@@ -946,15 +928,9 @@ const mouthPreviews = computed(() => {
   return mouthOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: 'variant01',
-      eyebrows: 'variant01',
-      mouth: option.value,
-      glasses: 'none',
-      earrings: 'none',
-      hair: 'long01',
-      skinColor: 'f9e79f',
-      hairColor: '724133'
-    }, ['eyes', 'eyebrows', 'glasses', 'earrings', 'hair'])
+      ...avatarOptions.value,
+      mouth: option.value
+    })
   }))
 })
 
@@ -963,15 +939,9 @@ const glassesPreviews = computed(() => {
   return glassesOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: 'variant01',
-      eyebrows: 'variant01',
-      mouth: 'variant01',
-      glasses: option.value,
-      earrings: 'none',
-      hair: 'long01',
-      skinColor: 'f9e79f',
-      hairColor: '724133'
-    }, ['mouth', 'earrings', 'hair'])
+      ...avatarOptions.value,
+      glasses: option.value
+    })
   }))
 })
 
@@ -980,15 +950,9 @@ const earringPreviews = computed(() => {
   return earringsOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: 'variant01',
-      eyebrows: 'variant01',
-      mouth: 'variant01',
-      glasses: 'none',
-      earrings: option.value,
-      hair: 'long01',
-      skinColor: 'f9e79f',
-      hairColor: '724133'
-    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'hair'])
+      ...avatarOptions.value,
+      earrings: option.value
+    })
   }))
 })
 
@@ -997,15 +961,9 @@ const skinColorPreviews = computed(() => {
   return skinColorOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: 'variant01',
-      eyebrows: 'variant01',
-      mouth: 'variant01',
-      glasses: 'none',
-      earrings: 'none',
-      hair: 'long01',
-      skinColor: option.value,
-      hairColor: '724133'
-    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'earrings', 'hair'])
+      ...avatarOptions.value,
+      skinColor: option.value
+    })
   }))
 })
 
@@ -1014,15 +972,9 @@ const hairColorPreviews = computed(() => {
   return hairColorOptions.map(option => ({
     ...option,
     previewUrl: generateAvatar({
-      eyes: 'variant01',
-      eyebrows: 'variant01',
-      mouth: 'variant01',
-      glasses: 'none',
-      earrings: 'none',
-      hair: defaultAvatarOptions.hair,
-      skinColor: 'f9e79f',
+      ...avatarOptions.value,
       hairColor: option.value
-    }, ['eyes', 'eyebrows', 'mouth', 'glasses', 'earrings'])
+    })
   }))
 })
 
