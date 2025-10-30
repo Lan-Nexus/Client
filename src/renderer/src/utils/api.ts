@@ -35,8 +35,8 @@ export async function getIpAddress(serverAddress: string) {
   return response.data.ip;
 }
 
-export async function createUser(serverAddress: string, name: string, clientId: string,avatar?: object) {
-  const payload: { name: string; avatar?: object } = { name };
+export async function createUser(serverAddress: string, name: string, clientId: string, avatar?: object) {
+  const payload: { name: string; clientId: string; avatar?: object } = { name, clientId };
   if (avatar) {
     payload.avatar = avatar;
   }

@@ -470,7 +470,7 @@ import { useAvatarStore } from '../stores/useAvatarStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useServerAddressStore } from '../stores/useServerAddress'
 import { useAlerts } from '../stores/useAlerts'
-import { updateUser } from '../utils/api'
+import { updateUser, createUser } from '../utils/api'
 import Alert from '../components/Alert.vue'
 
 // Interfaces
@@ -1385,10 +1385,23 @@ async function saveAvatar(): Promise<void> {
               description: 'You do not have permission to update this avatar.'
             })
           } else if (status === 404) {
-            alerts.showError({
-              title: 'User Not Found',
-              description: 'Could not find your user account on the server. Please try logging in again.'
-            })
+            // User not found - try to create the user
+            console.log('User not found, attempting to create user...')
+            try {
+              await createUser(serverAddress, finalUsername, authStore.getClientId, avatarJson.options)
+              alerts.showSuccess({
+                title: 'User Created & Avatar Saved',
+                description: 'New user account created and avatar saved successfully.'
+              })
+              // Navigate to game page after successful creation
+              router.push('/')
+            } catch (createError) {
+              console.error('Failed to create user:', createError)
+              alerts.showError({
+                title: 'User Creation Failed',
+                description: 'Could not create user account on server. Avatar saved locally.'
+              })
+            }
           } else if (status === 409) {
             alerts.showError({
               title: 'Conflict',
