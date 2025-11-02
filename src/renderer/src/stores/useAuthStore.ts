@@ -100,7 +100,7 @@ export const useAuthStore = defineStore('auth', {
         const avatarData = this.getCurrentAvatarOptions();
         logger.log('Sending avatar options to server:', avatarData);
 
-        const response = await createUser(serverAddress, this.username, this.clientId, avatarData.options);
+        const response = await createUser(serverAddress, this.username, this.clientId, avatarData ? avatarData.options : undefined);
         logger.log('User created on server:', response);
         this.userCreated = true;
       } catch (error) {
