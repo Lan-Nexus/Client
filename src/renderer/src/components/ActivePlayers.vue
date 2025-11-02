@@ -20,7 +20,7 @@ const avatarStore = useAvatarStore();
 const gameStore = useGameStore();
 const runningStore = useRunningStore();
 
-const avatar = computed(() => avatarStore.get());
+const avatar = computed(() => avatarStore.get() || '');
 const selectedGame = computed(() => gameStore.selectedGame);
 
 const isActiveGameRunning = computed(() => {

@@ -22,13 +22,7 @@ const formatTime = (dateString: string) => {
   return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString([], { 
-    weekday: 'long', 
-    month: 'short', 
-    day: 'numeric' 
-  });
-};
+
 
 const getTimeRemaining = (dateString: string): { days: string; hours: string; minutes: string; seconds: string } => {
   const now = new Date();
@@ -74,7 +68,7 @@ watch(nextGame, () => {
 
 onMounted(() => {
   calendarStore.loadScheduledGames();
-  
+
   // Update current game status every minute
   updateInterval = setInterval(() => {
     calendarStore.updateCurrentGame();
