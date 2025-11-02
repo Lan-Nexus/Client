@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import functions from '../functions.js';
 import { createUser, updateUser, generateFakeName } from '../utils/api.js';
 import { useServerAddressStore } from './useServerAddress.js';
+import type { AvatarOptions } from './useAvatarStore.js';
 
 import Logger from '../utils/logger.js';
 
@@ -141,7 +142,7 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
-    getCurrentAvatarOptions(): any | null {
+    getCurrentAvatarOptions(): AvatarOptions | null {
       try {
         const saved = localStorage.getItem('lan-nexus-current-avatar');
         if (saved) {

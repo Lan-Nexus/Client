@@ -2,7 +2,7 @@ import axios from 'axios';
 import { defineStore } from 'pinia';
 import { useServerAddressStore } from './useServerAddress.js';
 
-interface AvatarOptions {
+export interface AvatarOptions {
   eyes: string;
   eyebrows: string;
   mouth: string;
