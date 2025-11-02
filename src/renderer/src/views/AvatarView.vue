@@ -172,7 +172,7 @@
                           v-for="eye in eyePreviews"
                           :key="eye.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.eyes = eye.value; updateAvatar()"
+                          @click="avatarOptions.eyes = String(eye.value); updateAvatar()"
                           :title="eye.label"
                         >
                           <div
@@ -202,7 +202,7 @@
                           v-for="eyebrow in eyebrowPreviews"
                           :key="eyebrow.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.eyebrows = eyebrow.value; updateAvatar()"
+                          @click="avatarOptions.eyebrows = String(eyebrow.value); updateAvatar()"
                           :title="eyebrow.label"
                         >
                           <div
@@ -232,7 +232,7 @@
                           v-for="mouth in mouthPreviews"
                           :key="mouth.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.mouth = mouth.value; updateAvatar()"
+                          @click="avatarOptions.mouth = String(mouth.value); updateAvatar()"
                           :title="mouth.label"
                         >
                           <div
@@ -262,7 +262,7 @@
                           v-for="skin in skinColorPreviews"
                           :key="skin.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.skinColor = skin.value; updateAvatar()"
+                          @click="avatarOptions.skinColor = String(skin.value); updateAvatar()"
                           :title="skin.label"
                         >
                           <div
@@ -302,7 +302,7 @@
                           v-for="hair in hairPreviews"
                           :key="hair.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.hair = hair.value; updateAvatar()"
+                          @click="avatarOptions.hair = String(hair.value); updateAvatar()"
                           :title="hair.label"
                         >
                           <div
@@ -332,7 +332,7 @@
                           v-for="hairColor in hairColorPreviews"
                           :key="hairColor.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.hairColor = hairColor.value; updateAvatar()"
+                          @click="avatarOptions.hairColor = String(hairColor.value); updateAvatar()"
                           :title="hairColor.label"
                         >
                           <div
@@ -372,7 +372,7 @@
                           v-for="glasses in glassesPreviews"
                           :key="glasses.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.glasses = glasses.value; updateAvatar()"
+                          @click="avatarOptions.glasses = String(glasses.value); updateAvatar()"
                           :title="glasses.label"
                         >
                           <div
@@ -402,7 +402,7 @@
                           v-for="earring in earringPreviews"
                           :key="earring.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.earrings = earring.value; updateAvatar()"
+                          @click="avatarOptions.earrings = String(earring.value); updateAvatar()"
                           :title="earring.label"
                         >
                           <div
@@ -499,7 +499,7 @@ interface PresetCharacter {
 }
 
 interface SelectOption {
-  value: string | number
+  value: string
   label: string
 }
 
@@ -896,7 +896,7 @@ const hairPreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      hair: option.value
+      hair: String(option.value)
     })
   }))
 })
@@ -907,7 +907,7 @@ const eyePreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      eyes: option.value
+      eyes: String(option.value)
     })
   }))
 })
@@ -918,7 +918,7 @@ const eyebrowPreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      eyebrows: option.value
+      eyebrows: String(option.value)
     })
   }))
 })
@@ -929,7 +929,7 @@ const mouthPreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      mouth: option.value
+      mouth: String(option.value)
     })
   }))
 })
@@ -940,7 +940,7 @@ const glassesPreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      glasses: option.value
+      glasses: String(option.value)
     })
   }))
 })
@@ -951,7 +951,7 @@ const earringPreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      earrings: option.value
+      earrings: String(option.value)
     })
   }))
 })
@@ -962,7 +962,7 @@ const skinColorPreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      skinColor: option.value
+      skinColor: String(option.value)
     })
   }))
 })
@@ -973,7 +973,7 @@ const hairColorPreviews = computed(() => {
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      hairColor: option.value
+      hairColor: String(option.value)
     })
   }))
 })
