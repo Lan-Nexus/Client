@@ -9,7 +9,9 @@
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Avatar Creator</h1>
-            <p class="text-base-content/70 mt-1">Customize your avatar and express your personality</p>
+            <p class="text-base-content/70 mt-1">
+              Customize your avatar and express your personality
+            </p>
           </div>
           <div class="flex items-center gap-3">
             <button
@@ -37,11 +39,9 @@
 
     <div class="max-w-7xl mx-auto px-6 py-8">
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-
         <!-- Left Column: Avatar Preview & Identity -->
         <div class="xl:col-span-1">
           <div class="sticky top-8 space-y-6">
-
             <!-- Avatar Preview Card -->
             <div class="card bg-base-100 shadow-lg">
               <div class="card-body items-center text-center">
@@ -50,11 +50,16 @@
                 <!-- Large Avatar Preview -->
                 <div class="relative mb-6">
                   <div class="avatar">
-                    <div class="w-48 h-48 rounded-full ring ring-primary ring-offset-base-100 ring-offset-4 shadow-2xl">
+                    <div
+                      class="w-48 h-48 rounded-full ring ring-primary ring-offset-base-100 ring-offset-4 shadow-2xl"
+                    >
                       <img :src="currentAvatarUrl" alt="Your Avatar" class="rounded-full" />
                     </div>
                   </div>
-                  <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-base-100/80 rounded-full">
+                  <div
+                    v-if="isLoading"
+                    class="absolute inset-0 flex items-center justify-center bg-base-100/80 rounded-full"
+                  >
                     <span class="loading loading-spinner loading-lg text-primary"></span>
                   </div>
                 </div>
@@ -101,7 +106,6 @@
         <div class="xl:col-span-2">
           <div class="card bg-base-100 shadow-lg">
             <div class="card-body">
-
               <!-- Tabs -->
               <div class="tabs tabs-boxed mb-6">
                 <button
@@ -126,7 +130,9 @@
               <div v-show="activeTab === 'presets'" class="space-y-6">
                 <div>
                   <h3 class="text-lg font-semibold mb-3">Choose a Starting Point</h3>
-                  <p class="text-base-content/70 mb-6">Select a character preset and then customize to your liking</p>
+                  <p class="text-base-content/70 mb-6">
+                    Select a character preset and then customize to your liking
+                  </p>
 
                   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     <div
@@ -136,11 +142,19 @@
                       @click="loadPreset(preset)"
                       :title="`Load ${preset.name} preset`"
                     >
-                      <div class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg">
+                      <div
+                        class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg"
+                      >
                         <div class="card-body p-3 items-center">
                           <div class="avatar mb-2">
-                            <div class="w-16 h-16 rounded-full ring ring-base-300 group-hover:ring-primary transition-all duration-200">
-                              <img :src="getPresetUrl(preset)" :alt="preset.name" class="rounded-full" />
+                            <div
+                              class="w-16 h-16 rounded-full ring ring-base-300 group-hover:ring-primary transition-all duration-200"
+                            >
+                              <img
+                                :src="getPresetUrl(preset)"
+                                :alt="preset.name"
+                                class="rounded-full"
+                              />
                             </div>
                           </div>
                           <h4 class="text-sm font-medium text-center">{{ preset.name }}</h4>
@@ -153,7 +167,6 @@
 
               <!-- Customize Tab -->
               <div v-show="activeTab === 'customize'" class="space-y-8">
-
                 <!-- Face Section -->
                 <div class="space-y-4">
                   <div class="flex items-center gap-2 mb-4">
@@ -167,25 +180,37 @@
                       <label class="label">
                         <span class="label-text font-medium">Eyes Style</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="eye in eyePreviews"
                           :key="eye.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.eyes = String(eye.value); updateAvatar()"
+                          @click="
+                            avatarOptions.eyes = String(eye.value);
+                            updateAvatar();
+                          "
                           :title="eye.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.eyes === eye.value, 'border-transparent': avatarOptions.eyes !== eye.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.eyes === String(eye.value),
+                              'border-transparent': avatarOptions.eyes !== String(eye.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="eye.previewUrl" :alt="eye.label" class="rounded-full" />
+                                  <img
+                                    :src="eye.previewUrl"
+                                    :alt="eye.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -197,25 +222,38 @@
                       <label class="label">
                         <span class="label-text font-medium">Eyebrows</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="eyebrow in eyebrowPreviews"
                           :key="eyebrow.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.eyebrows = String(eyebrow.value); updateAvatar()"
+                          @click="
+                            avatarOptions.eyebrows = String(eyebrow.value);
+                            updateAvatar();
+                          "
                           :title="eyebrow.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.eyebrows === eyebrow.value, 'border-transparent': avatarOptions.eyebrows !== eyebrow.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.eyebrows === String(eyebrow.value),
+                              'border-transparent':
+                                avatarOptions.eyebrows !== String(eyebrow.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="eyebrow.previewUrl" :alt="eyebrow.label" class="rounded-full" />
+                                  <img
+                                    :src="eyebrow.previewUrl"
+                                    :alt="eyebrow.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -227,25 +265,37 @@
                       <label class="label">
                         <span class="label-text font-medium">Mouth Expression</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="mouth in mouthPreviews"
                           :key="mouth.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.mouth = String(mouth.value); updateAvatar()"
+                          @click="
+                            avatarOptions.mouth = String(mouth.value);
+                            updateAvatar();
+                          "
                           :title="mouth.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.mouth === mouth.value, 'border-transparent': avatarOptions.mouth !== mouth.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.mouth === String(mouth.value),
+                              'border-transparent': avatarOptions.mouth !== String(mouth.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="mouth.previewUrl" :alt="mouth.label" class="rounded-full" />
+                                  <img
+                                    :src="mouth.previewUrl"
+                                    :alt="mouth.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -257,25 +307,37 @@
                       <label class="label">
                         <span class="label-text font-medium">Skin Tone</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="skin in skinColorPreviews"
                           :key="skin.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.skinColor = String(skin.value); updateAvatar()"
+                          @click="
+                            avatarOptions.skinColor = String(skin.value);
+                            updateAvatar();
+                          "
                           :title="skin.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.skinColor === skin.value, 'border-transparent': avatarOptions.skinColor !== skin.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.skinColor === String(skin.value),
+                              'border-transparent': avatarOptions.skinColor !== String(skin.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="skin.previewUrl" :alt="skin.label" class="rounded-full" />
+                                  <img
+                                    :src="skin.previewUrl"
+                                    :alt="skin.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -297,25 +359,37 @@
                       <label class="label">
                         <span class="label-text font-medium">Hairstyle</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="hair in hairPreviews"
                           :key="hair.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.hair = String(hair.value); updateAvatar()"
+                          @click="
+                            avatarOptions.hair = String(hair.value);
+                            updateAvatar();
+                          "
                           :title="hair.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.hair === hair.value, 'border-transparent': avatarOptions.hair !== hair.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.hair === String(hair.value),
+                              'border-transparent': avatarOptions.hair !== String(hair.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="hair.previewUrl" :alt="hair.label" class="rounded-full" />
+                                  <img
+                                    :src="hair.previewUrl"
+                                    :alt="hair.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -327,25 +401,38 @@
                       <label class="label">
                         <span class="label-text font-medium">Hair Color</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="hairColor in hairColorPreviews"
                           :key="hairColor.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.hairColor = String(hairColor.value); updateAvatar()"
+                          @click="
+                            avatarOptions.hairColor = String(hairColor.value);
+                            updateAvatar();
+                          "
                           :title="hairColor.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.hairColor === hairColor.value, 'border-transparent': avatarOptions.hairColor !== hairColor.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.hairColor === String(hairColor.value),
+                              'border-transparent':
+                                avatarOptions.hairColor !== String(hairColor.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="hairColor.previewUrl" :alt="hairColor.label" class="rounded-full" />
+                                  <img
+                                    :src="hairColor.previewUrl"
+                                    :alt="hairColor.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -367,25 +454,37 @@
                       <label class="label">
                         <span class="label-text font-medium">Glasses</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="glasses in glassesPreviews"
                           :key="glasses.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.glasses = String(glasses.value); updateAvatar()"
+                          @click="
+                            avatarOptions.glasses = String(glasses.value);
+                            updateAvatar();
+                          "
                           :title="glasses.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.glasses === glasses.value, 'border-transparent': avatarOptions.glasses !== glasses.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.glasses === String(glasses.value),
+                              'border-transparent': avatarOptions.glasses !== String(glasses.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="glasses.previewUrl" :alt="glasses.label" class="rounded-full" />
+                                  <img
+                                    :src="glasses.previewUrl"
+                                    :alt="glasses.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -397,25 +496,38 @@
                       <label class="label">
                         <span class="label-text font-medium">Earrings</span>
                       </label>
-                      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2">
+                      <div
+                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
+                      >
                         <div
                           v-for="earring in earringPreviews"
                           :key="earring.value"
                           class="cursor-pointer group"
-                          @click="avatarOptions.earrings = String(earring.value); updateAvatar()"
+                          @click="
+                            avatarOptions.earrings = String(earring.value);
+                            updateAvatar();
+                          "
                           :title="earring.label"
                         >
                           <div
                             class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{ 'border-primary ring-2 ring-primary ring-opacity-50': avatarOptions.earrings === earring.value, 'border-transparent': avatarOptions.earrings !== earring.value }"
+                            :class="{
+                              'border-primary ring-2 ring-primary ring-opacity-50':
+                                avatarOptions.earrings === String(earring.value),
+                              'border-transparent':
+                                avatarOptions.earrings !== String(earring.value),
+                            }"
                           >
                             <div class="card-body p-1 items-center">
                               <div class="avatar">
                                 <div class="w-16 h-16 rounded-full">
-                                  <img :src="earring.previewUrl" :alt="earring.label" class="rounded-full" />
+                                  <img
+                                    :src="earring.previewUrl"
+                                    :alt="earring.label"
+                                    class="rounded-full"
+                                  />
                                 </div>
                               </div>
-
                             </div>
                           </div>
                         </div>
@@ -441,7 +553,6 @@
                   </button>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -452,9 +563,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faDice,
   faSave,
@@ -462,57 +573,57 @@ import {
   faUsers,
   faEye,
   faCut,
-  faGem
-} from '@fortawesome/free-solid-svg-icons'
-import { createAvatar } from '@dicebear/core'
-import { adventurer } from '@dicebear/collection'
-import { useAvatarStore } from '../stores/useAvatarStore'
-import { useAuthStore } from '../stores/useAuthStore'
-import { useServerAddressStore } from '../stores/useServerAddress'
-import { useAlerts } from '../stores/useAlerts'
-import { updateUser, createUser } from '../utils/api'
-import Alert from '../components/Alert.vue'
+  faGem,
+} from '@fortawesome/free-solid-svg-icons';
+import { createAvatar } from '@dicebear/core';
+import { adventurer } from '@dicebear/collection';
+import { useAvatarStore } from '../stores/useAvatarStore';
+import { useAuthStore } from '../stores/useAuthStore';
+import { useServerAddressStore } from '../stores/useServerAddress';
+import { useAlerts } from '../stores/useAlerts';
+import { updateUser, createUser } from '../utils/api';
+import Alert from '../components/Alert.vue';
 
 // Interfaces
 interface SavedAvatar {
-  username: string
-  options: AvatarOptions
-  timestamp: number
+  username: string;
+  options: AvatarOptions;
+  timestamp: number;
 }
 
 interface AvatarOptions {
-  eyes: string
-  eyebrows: string
-  mouth: string
-  glasses: string
-  earrings: string
-  hair: string
-  skinColor: string
-  hairColor: string
-  backgroundColor?: string[]
-  backgroundType?: string[]
+  eyes: string;
+  eyebrows: string;
+  mouth: string;
+  glasses: string;
+  earrings: string;
+  hair: string;
+  skinColor: string;
+  hairColor: string;
+  backgroundColor?: string[];
+  backgroundType?: string[];
 }
 
 interface PresetCharacter {
-  name: string
-  options: AvatarOptions
+  name: string;
+  options: AvatarOptions;
 }
 
 interface SelectOption {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
 // Stores and router
-const router = useRouter()
-const avatarStore = useAvatarStore()
-const authStore = useAuthStore()
-const serverAddressStore = useServerAddressStore()
-const alerts = useAlerts()
+const router = useRouter();
+const avatarStore = useAvatarStore();
+const authStore = useAuthStore();
+const serverAddressStore = useServerAddressStore();
+const alerts = useAlerts();
 
 // Reactive state
-const activeTab = ref('presets')
-const username = ref('')
+const activeTab = ref('presets');
+const username = ref('');
 const avatarOptions = ref<AvatarOptions>({
   eyes: 'variant01',
   eyebrows: 'variant01',
@@ -523,13 +634,13 @@ const avatarOptions = ref<AvatarOptions>({
   skinColor: 'fdbcb4',
   hairColor: '724133',
   backgroundColor: ['transparent'],
-  backgroundType: ['solid']
-})
+  backgroundType: ['solid'],
+});
 
-const savedAvatar = ref<SavedAvatar | null>(null)
-const isLoading = ref(false)
-const isSaving = ref(false)
-const usernameError = ref('')
+const savedAvatar = ref<SavedAvatar | null>(null);
+const isLoading = ref(false);
+const isSaving = ref(false);
+const usernameError = ref('');
 
 // Default avatar for comparison
 const defaultAvatarOptions: AvatarOptions = {
@@ -542,8 +653,8 @@ const defaultAvatarOptions: AvatarOptions = {
   skinColor: 'fdbcb4',
   hairColor: '724133',
   backgroundColor: ['transparent'],
-  backgroundType: ['solid']
-}
+  backgroundType: ['solid'],
+};
 
 // Improved option labels
 const eyesOptions: SelectOption[] = [
@@ -566,8 +677,8 @@ const eyesOptions: SelectOption[] = [
   { value: 'variant17', label: 'Bold' },
   { value: 'variant18', label: 'Serene' },
   { value: 'variant19', label: 'Adventurous' },
-  { value: 'variant20', label: 'Confident' }
-]
+  { value: 'variant20', label: 'Confident' },
+];
 
 const eyebrowsOptions: SelectOption[] = [
   { value: 'variant01', label: 'Natural' },
@@ -584,8 +695,8 @@ const eyebrowsOptions: SelectOption[] = [
   { value: 'variant12', label: 'Defined' },
   { value: 'variant13', label: 'Relaxed' },
   { value: 'variant14', label: 'Dramatic' },
-  { value: 'variant15', label: 'Balanced' }
-]
+  { value: 'variant15', label: 'Balanced' },
+];
 
 const mouthOptions: SelectOption[] = [
   { value: 'variant01', label: 'Neutral' },
@@ -607,8 +718,8 @@ const mouthOptions: SelectOption[] = [
   { value: 'variant17', label: 'Cheerful' },
   { value: 'variant18', label: 'Determined' },
   { value: 'variant19', label: 'Wise' },
-  { value: 'variant20', label: 'Bold' }
-]
+  { value: 'variant20', label: 'Bold' },
+];
 
 const hairOptions: SelectOption[] = [
   { value: 'long01', label: 'Long Wavy' },
@@ -655,8 +766,8 @@ const hairOptions: SelectOption[] = [
   { value: 'short16', label: 'Short Artistic' },
   { value: 'short17', label: 'Short Bold' },
   { value: 'short18', label: 'Short Chic' },
-  { value: 'short19', label: 'Short Stylish' }
-]
+  { value: 'short19', label: 'Short Stylish' },
+];
 
 const skinColorOptions: SelectOption[] = [
   { value: 'fdbcb4', label: 'Fair' },
@@ -688,8 +799,8 @@ const skinColorOptions: SelectOption[] = [
   { value: 'fdcb6e', label: 'Peach' },
   { value: 'e17055', label: 'Terra Cotta' },
   { value: '81ecec', label: 'Cyan' },
-  { value: 'a29bfe', label: 'Periwinkle' }
-]
+  { value: 'a29bfe', label: 'Periwinkle' },
+];
 
 const hairColorOptions: SelectOption[] = [
   { value: '0e0e0e', label: 'Jet Black' },
@@ -703,8 +814,8 @@ const hairColorOptions: SelectOption[] = [
   { value: 'ad1457', label: 'Deep Red' },
   { value: '757575', label: 'Steel Gray' },
   { value: 'e0e0e0', label: 'Silver' },
-  { value: 'ffffff', label: 'Platinum' }
-]
+  { value: 'ffffff', label: 'Platinum' },
+];
 
 const earringsOptions: SelectOption[] = [
   { value: 'none', label: 'None' },
@@ -713,8 +824,8 @@ const earringsOptions: SelectOption[] = [
   { value: 'variant03', label: 'Dangling' },
   { value: 'variant04', label: 'Elegant Drops' },
   { value: 'variant05', label: 'Statement' },
-  { value: 'variant06', label: 'Classic Pearls' }
-]
+  { value: 'variant06', label: 'Classic Pearls' },
+];
 
 const glassesOptions: SelectOption[] = [
   { value: 'none', label: 'No Glasses' },
@@ -722,8 +833,8 @@ const glassesOptions: SelectOption[] = [
   { value: 'variant02', label: 'Round Frame' },
   { value: 'variant03', label: 'Square Frame' },
   { value: 'variant04', label: 'Cat Eye' },
-  { value: 'variant05', label: 'Aviator Style' }
-]
+  { value: 'variant05', label: 'Aviator Style' },
+];
 
 // Preset characters
 const presetCharacters: PresetCharacter[] = [
@@ -737,8 +848,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'none',
       hair: 'long05',
       skinColor: 'ae5d29',
-      hairColor: '724133'
-    }
+      hairColor: '724133',
+    },
   },
   {
     name: 'Legolas',
@@ -750,8 +861,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant01',
       hair: 'long12',
       skinColor: 'fdbcb4',
-      hairColor: 'e6c200'
-    }
+      hairColor: 'e6c200',
+    },
   },
   {
     name: 'Gandalf',
@@ -763,8 +874,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'none',
       hair: 'long18',
       skinColor: 'edb98a',
-      hairColor: 'e0e0e0'
-    }
+      hairColor: 'e0e0e0',
+    },
   },
   {
     name: 'Gimli',
@@ -776,8 +887,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant02',
       hair: 'short08',
       skinColor: '8d5524',
-      hairColor: 'd32f2f'
-    }
+      hairColor: 'd32f2f',
+    },
   },
   {
     name: 'Elara',
@@ -789,8 +900,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant03',
       hair: 'long08',
       skinColor: 'fdbcb4',
-      hairColor: 'ad1457'
-    }
+      hairColor: 'ad1457',
+    },
   },
   {
     name: 'Thorin',
@@ -802,8 +913,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant04',
       hair: 'short12',
       skinColor: 'd08b5b',
-      hairColor: '0e0e0e'
-    }
+      hairColor: '0e0e0e',
+    },
   },
   {
     name: 'Merlin',
@@ -815,8 +926,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'none',
       hair: 'long20',
       skinColor: 'edb98a',
-      hairColor: 'ffffff'
-    }
+      hairColor: 'ffffff',
+    },
   },
   {
     name: 'Sable',
@@ -828,8 +939,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant05',
       hair: 'short16',
       skinColor: '6f4518',
-      hairColor: '757575'
-    }
+      hairColor: '757575',
+    },
   },
   {
     name: 'Zara',
@@ -841,8 +952,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant06',
       hair: 'long24',
       skinColor: '4e2906',
-      hairColor: 'f59797'
-    }
+      hairColor: 'f59797',
+    },
   },
   {
     name: 'Kai',
@@ -854,8 +965,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'none',
       hair: 'short19',
       skinColor: '2d1b05',
-      hairColor: 'e6c200'
-    }
+      hairColor: 'e6c200',
+    },
   },
   {
     name: 'Luna',
@@ -867,8 +978,8 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant02',
       hair: 'long15',
       skinColor: 'ae5d29',
-      hairColor: 'ff5722'
-    }
+      hairColor: 'ff5722',
+    },
   },
   {
     name: 'Draven',
@@ -880,130 +991,130 @@ const presetCharacters: PresetCharacter[] = [
       earrings: 'variant01',
       hair: 'short05',
       skinColor: '8d5524',
-      hairColor: '0e0e0e'
-    }
-  }
-]
+      hairColor: '0e0e0e',
+    },
+  },
+];
 
 // Computed properties
 const currentAvatarUrl = computed(() => {
-  return generateAvatar(avatarOptions.value)
-})
+  return generateAvatar(avatarOptions.value);
+});
 
 // Generate preview images for each hair option
 const hairPreviews = computed(() => {
-  return hairOptions.map(option => ({
+  return hairOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      hair: String(option.value)
-    })
-  }))
-})
+      hair: String(option.value),
+    }),
+  }));
+});
 
 // Generate preview images for each eye option
 const eyePreviews = computed(() => {
-  return eyesOptions.map(option => ({
+  return eyesOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      eyes: String(option.value)
-    })
-  }))
-})
+      eyes: String(option.value),
+    }),
+  }));
+});
 
 // Generate preview images for each eyebrow option
 const eyebrowPreviews = computed(() => {
-  return eyebrowsOptions.map(option => ({
+  return eyebrowsOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      eyebrows: String(option.value)
-    })
-  }))
-})
+      eyebrows: String(option.value),
+    }),
+  }));
+});
 
 // Generate preview images for each mouth option
 const mouthPreviews = computed(() => {
-  return mouthOptions.map(option => ({
+  return mouthOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      mouth: String(option.value)
-    })
-  }))
-})
+      mouth: String(option.value),
+    }),
+  }));
+});
 
 // Generate preview images for each glasses option
 const glassesPreviews = computed(() => {
-  return glassesOptions.map(option => ({
+  return glassesOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      glasses: String(option.value)
-    })
-  }))
-})
+      glasses: String(option.value),
+    }),
+  }));
+});
 
 // Generate preview images for each earring option
 const earringPreviews = computed(() => {
-  return earringsOptions.map(option => ({
+  return earringsOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      earrings: String(option.value)
-    })
-  }))
-})
+      earrings: String(option.value),
+    }),
+  }));
+});
 
 // Generate preview images for each skin color option
 const skinColorPreviews = computed(() => {
-  return skinColorOptions.map(option => ({
+  return skinColorOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      skinColor: String(option.value)
-    })
-  }))
-})
+      skinColor: String(option.value),
+    }),
+  }));
+});
 
 // Generate preview images for each hair color option
 const hairColorPreviews = computed(() => {
-  return hairColorOptions.map(option => ({
+  return hairColorOptions.map((option) => ({
     ...option,
     previewUrl: generateAvatar({
       ...avatarOptions.value,
-      hairColor: String(option.value)
-    })
-  }))
-})
+      hairColor: String(option.value),
+    }),
+  }));
+});
 
 const customizationPercentage = computed(() => {
-  let changes = 0
-  let total = 0
+  let changes = 0;
+  let total = 0;
 
   for (const key in defaultAvatarOptions) {
-    total++
+    total++;
     if (avatarOptions.value[key] !== defaultAvatarOptions[key]) {
-      changes++
+      changes++;
     }
   }
 
-  return Math.round((changes / total) * 100)
-})
+  return Math.round((changes / total) * 100);
+});
 
 const currentStyle = computed(() => {
-  const hair = avatarOptions.value.hair
-  if (hair.includes('long')) return 'Elegant'
-  if (hair.includes('short')) return 'Modern'
-  return 'Classic'
-})
+  const hair = avatarOptions.value.hair;
+  if (hair.includes('long')) return 'Elegant';
+  if (hair.includes('short')) return 'Modern';
+  return 'Classic';
+});
 
 // Methods
 function generateAvatar(options: AvatarOptions, hideElements?: string[]): string {
   try {
     if (!options || typeof options !== 'object') {
-      throw new Error('Invalid avatar options provided')
+      throw new Error('Invalid avatar options provided');
     }
     const avatarConfig: any = {
       size: 128,
@@ -1014,76 +1125,76 @@ function generateAvatar(options: AvatarOptions, hideElements?: string[]): string
       skinColor: [options.skinColor || 'fdbcb4'],
       hairColor: [options.hairColor || '724133'],
       backgroundColor: options.backgroundColor || ['transparent'],
-      backgroundType: options.backgroundType || ['solid']
-    }
+      backgroundType: options.backgroundType || ['solid'],
+    };
 
     // Hide elements by setting their probability to 0
     if (hideElements) {
-      if (hideElements.includes('eyes')) avatarConfig.eyesProbability = 0
-      if (hideElements.includes('eyebrows')) avatarConfig.eyebrowsProbability = 0
-      if (hideElements.includes('mouth')) avatarConfig.mouthProbability = 0
+      if (hideElements.includes('eyes')) avatarConfig.eyesProbability = 0;
+      if (hideElements.includes('eyebrows')) avatarConfig.eyebrowsProbability = 0;
+      if (hideElements.includes('mouth')) avatarConfig.mouthProbability = 0;
       if (hideElements.includes('hair')) {
-        avatarConfig.hairProbability = 0
-        avatarConfig.hairColor = ['transparent']
+        avatarConfig.hairProbability = 0;
+        avatarConfig.hairColor = ['transparent'];
       }
       if (hideElements.includes('skinColor')) {
-        avatarConfig.skinColor = ['transparent']
+        avatarConfig.skinColor = ['transparent'];
       }
     }
 
     if (options.earrings && options.earrings !== 'none') {
-      avatarConfig.earrings = [options.earrings]
-      avatarConfig.earringsProbability = 100
+      avatarConfig.earrings = [options.earrings];
+      avatarConfig.earringsProbability = 100;
     } else if (hideElements?.includes('earrings')) {
-      avatarConfig.earringsProbability = 0
+      avatarConfig.earringsProbability = 0;
     }
 
     if (options.glasses && options.glasses !== 'none') {
-      avatarConfig.glasses = [options.glasses]
-      avatarConfig.glassesProbability = 100
+      avatarConfig.glasses = [options.glasses];
+      avatarConfig.glassesProbability = 100;
     } else if (hideElements?.includes('glasses')) {
-      avatarConfig.glassesProbability = 0
+      avatarConfig.glassesProbability = 0;
     }
 
-    const avatar = createAvatar(adventurer, avatarConfig)
-    const dataUri = avatar.toDataUri()
+    const avatar = createAvatar(adventurer, avatarConfig);
+    const dataUri = avatar.toDataUri();
 
     if (!dataUri) {
-      throw new Error('Failed to generate avatar data URI')
+      throw new Error('Failed to generate avatar data URI');
     }
 
-    return dataUri
+    return dataUri;
   } catch (error) {
-    console.error('Error generating avatar:', error)
+    console.error('Error generating avatar:', error);
     alerts.showError({
       title: 'Avatar Generation Error',
-      description: 'Failed to generate avatar preview. Please try refreshing the page.'
-    })
+      description: 'Failed to generate avatar preview. Please try refreshing the page.',
+    });
 
-    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjY0IiB5PSI2NCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iIzlDQTNBRiI+Pz88L3RleHQ+Cjwvc3ZnPgo='
+    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjY0IiB5PSI2NCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iIzlDQTNBRiI+Pz88L3RleHQ+Cjwvc3ZnPgo=';
   }
 }
 
 function getPresetUrl(preset: PresetCharacter): string {
-  return generateAvatar(preset.options)
+  return generateAvatar(preset.options);
 }
 
 function updateAvatar(): void {
   try {
-    const validation = validateAvatarOptions(avatarOptions.value)
+    const validation = validateAvatarOptions(avatarOptions.value);
     if (!validation.isValid) {
-      console.warn('Avatar validation warning:', validation.error)
+      console.warn('Avatar validation warning:', validation.error);
       alerts.showWarning({
         title: 'Avatar Warning',
-        description: validation.error || 'Some avatar options may be invalid.'
-      })
+        description: validation.error || 'Some avatar options may be invalid.',
+      });
     }
   } catch (error) {
-    console.error('Error updating avatar:', error)
+    console.error('Error updating avatar:', error);
     alerts.showError({
       title: 'Update Error',
-      description: 'Failed to update avatar preview. Please try again.'
-    })
+      description: 'Failed to update avatar preview. Please try again.',
+    });
   }
 }
 
@@ -1091,10 +1202,10 @@ function randomizeAll(): void {
   try {
     const getRandomOption = (options: SelectOption[]) => {
       if (!options || options.length === 0) {
-        throw new Error('No options available for randomization')
+        throw new Error('No options available for randomization');
       }
-      return options[Math.floor(Math.random() * options.length)].value
-    }
+      return options[Math.floor(Math.random() * options.length)].value;
+    };
 
     avatarOptions.value = {
       eyes: getRandomOption(eyesOptions) as string,
@@ -1106,405 +1217,424 @@ function randomizeAll(): void {
       skinColor: getRandomOption(skinColorOptions) as string,
       hairColor: getRandomOption(hairColorOptions) as string,
       backgroundColor: ['ffffff'],
-      backgroundType: ['solid']
-    }
+      backgroundType: ['solid'],
+    };
 
     alerts.showSuccess({
       title: 'Avatar Randomized',
-      description: 'Your avatar has been randomized successfully!'
-    })
+      description: 'Your avatar has been randomized successfully!',
+    });
   } catch (error) {
-    console.error('Error randomizing avatar:', error)
+    console.error('Error randomizing avatar:', error);
     alerts.showError({
       title: 'Randomization Failed',
-      description: 'Failed to randomize avatar options. Please try again.'
-    })
+      description: 'Failed to randomize avatar options. Please try again.',
+    });
   }
 }
 
 function randomizeFace(): void {
   const getRandomOption = (options: SelectOption[]) =>
-    options[Math.floor(Math.random() * options.length)].value
+    options[Math.floor(Math.random() * options.length)].value;
 
-  avatarOptions.value.eyes = getRandomOption(eyesOptions) as string
-  avatarOptions.value.eyebrows = getRandomOption(eyebrowsOptions) as string
-  avatarOptions.value.mouth = getRandomOption(mouthOptions) as string
-  avatarOptions.value.skinColor = getRandomOption(skinColorOptions) as string
+  avatarOptions.value.eyes = getRandomOption(eyesOptions) as string;
+  avatarOptions.value.eyebrows = getRandomOption(eyebrowsOptions) as string;
+  avatarOptions.value.mouth = getRandomOption(mouthOptions) as string;
+  avatarOptions.value.skinColor = getRandomOption(skinColorOptions) as string;
 
-  updateAvatar()
+  updateAvatar();
 }
 
 function randomizeHair(): void {
   const getRandomOption = (options: SelectOption[]) =>
-    options[Math.floor(Math.random() * options.length)].value
+    options[Math.floor(Math.random() * options.length)].value;
 
-  avatarOptions.value.hair = getRandomOption(hairOptions) as string
-  avatarOptions.value.hairColor = getRandomOption(hairColorOptions) as string
+  avatarOptions.value.hair = getRandomOption(hairOptions) as string;
+  avatarOptions.value.hairColor = getRandomOption(hairColorOptions) as string;
 
-  updateAvatar()
+  updateAvatar();
 }
 
 function randomizeAccessories(): void {
   const getRandomOption = (options: SelectOption[]) =>
-    options[Math.floor(Math.random() * options.length)].value
+    options[Math.floor(Math.random() * options.length)].value;
 
-  avatarOptions.value.glasses = getRandomOption(glassesOptions) as string
-  avatarOptions.value.earrings = getRandomOption(earringsOptions) as string
+  avatarOptions.value.glasses = getRandomOption(glassesOptions) as string;
+  avatarOptions.value.earrings = getRandomOption(earringsOptions) as string;
 
-  updateAvatar()
+  updateAvatar();
 }
 
 function loadPreset(preset: PresetCharacter): void {
   try {
     if (!preset || !preset.options) {
-      throw new Error('Invalid preset character data')
+      throw new Error('Invalid preset character data');
     }
 
-    avatarOptions.value = { ...preset.options }
-    activeTab.value = 'customize'
+    avatarOptions.value = { ...preset.options };
+    activeTab.value = 'customize';
 
     alerts.showSuccess({
       title: 'Preset Loaded',
-      description: `${preset.name} preset has been applied successfully!`
-    })
+      description: `${preset.name} preset has been applied successfully!`,
+    });
   } catch (error) {
-    console.error('Error loading preset:', error)
+    console.error('Error loading preset:', error);
     alerts.showError({
       title: 'Preset Load Failed',
-      description: 'Failed to load the selected character preset. Please try again.'
-    })
+      description: 'Failed to load the selected character preset. Please try again.',
+    });
   }
 }
 
 // Utility functions for validation
 function validateUsername(username: string): { isValid: boolean; error?: string } {
   if (!username || username.trim() === '') {
-    return { isValid: false, error: 'Username is required' }
+    return { isValid: false, error: 'Username is required' };
   }
 
-  const trimmed = username.trim()
+  const trimmed = username.trim();
   if (trimmed.length < 2) {
-    return { isValid: false, error: 'Username must be at least 2 characters long' }
+    return { isValid: false, error: 'Username must be at least 2 characters long' };
   }
 
   if (trimmed.length > 50) {
-    return { isValid: false, error: 'Username must be less than 50 characters' }
+    return { isValid: false, error: 'Username must be less than 50 characters' };
   }
 
-  const validUsernameRegex = /^[a-zA-Z0-9_\-\s]+$/
+  const validUsernameRegex = /^[a-zA-Z0-9_\-\s]+$/;
   if (!validUsernameRegex.test(trimmed)) {
-    return { isValid: false, error: 'Username can only contain letters, numbers, spaces, hyphens, and underscores' }
+    return {
+      isValid: false,
+      error: 'Username can only contain letters, numbers, spaces, hyphens, and underscores',
+    };
   }
 
-  return { isValid: true }
+  return { isValid: true };
 }
 
 function validateUsernameInput(): void {
-  const validation = validateUsername(username.value)
+  const validation = validateUsername(username.value);
   if (!validation.isValid) {
-    usernameError.value = validation.error || ''
+    usernameError.value = validation.error || '';
   } else {
-    usernameError.value = ''
+    usernameError.value = '';
   }
 }
 
 function clearUsernameError(): void {
-  usernameError.value = ''
+  usernameError.value = '';
 }
 
 function validateAvatarOptions(options: AvatarOptions): { isValid: boolean; error?: string } {
   if (!options || typeof options !== 'object') {
-    return { isValid: false, error: 'Invalid avatar options' }
+    return { isValid: false, error: 'Invalid avatar options' };
   }
 
-  const requiredFields = ['eyes', 'eyebrows', 'mouth', 'hair', 'skinColor', 'hairColor']
+  const requiredFields = ['eyes', 'eyebrows', 'mouth', 'hair', 'skinColor', 'hairColor'];
   for (const field of requiredFields) {
     if (!options[field]) {
-      return { isValid: false, error: `Missing required avatar option: ${field}` }
+      return { isValid: false, error: `Missing required avatar option: ${field}` };
     }
   }
 
-  return { isValid: true }
+  return { isValid: true };
 }
 
 async function saveAvatar(): Promise<void> {
-  if (isSaving.value) return
+  if (isSaving.value) return;
 
   try {
-    isSaving.value = true
-    const finalUsername = username.value || authStore.getUsername
-    console.log('Starting avatar save process for username:', finalUsername)
+    isSaving.value = true;
+    const finalUsername = username.value || authStore.getUsername;
+    console.log('Starting avatar save process for username:', finalUsername);
 
-    const usernameValidation = validateUsername(finalUsername)
+    const usernameValidation = validateUsername(finalUsername);
     if (!usernameValidation.isValid) {
       alerts.showError({
         title: 'Invalid Username',
-        description: usernameValidation.error || 'Please enter a valid username before saving your avatar.'
-      })
-      return
+        description:
+          usernameValidation.error || 'Please enter a valid username before saving your avatar.',
+      });
+      return;
     }
 
-    const avatarValidation = validateAvatarOptions(avatarOptions.value)
+    const avatarValidation = validateAvatarOptions(avatarOptions.value);
     if (!avatarValidation.isValid) {
       alerts.showError({
         title: 'Invalid Avatar',
-        description: avatarValidation.error || 'Your avatar configuration is invalid. Please try regenerating it.'
-      })
-      return
+        description:
+          avatarValidation.error ||
+          'Your avatar configuration is invalid. Please try regenerating it.',
+      });
+      return;
     }
 
     if (username.value && username.value !== authStore.getUsername) {
       try {
-        authStore.setUsername(username.value)
+        authStore.setUsername(username.value);
       } catch (error) {
-        console.error('Error updating username in auth store:', error)
+        console.error('Error updating username in auth store:', error);
         alerts.showError({
           title: 'Username Update Failed',
-          description: 'Failed to update username. Please try again.'
-        })
-        return
+          description: 'Failed to update username. Please try again.',
+        });
+        return;
       }
     }
 
     const avatarJson = {
       username: finalUsername,
       options: { ...avatarOptions.value },
-      timestamp: Date.now()
-    }
+      timestamp: Date.now(),
+    };
 
     const avatarData = {
       username: finalUsername,
       options: { ...avatarOptions.value },
-      timestamp: Date.now()
-    }
+      timestamp: Date.now(),
+    };
 
-    console.log('Avatar data to save:', avatarData)
+    console.log('Avatar data to save:', avatarData);
 
     try {
-      localStorage.setItem('lan-nexus-current-avatar', JSON.stringify(avatarData))
-      console.log('Avatar saved to localStorage')
+      localStorage.setItem('lan-nexus-current-avatar', JSON.stringify(avatarData));
+      console.log('Avatar saved to localStorage');
     } catch (localStorageError) {
-      console.error('Error saving to localStorage:', localStorageError)
+      console.error('Error saving to localStorage:', localStorageError);
       alerts.showError({
         title: 'Local Save Failed',
-        description: 'Failed to save avatar locally. Your browser storage may be full.'
-      })
-      return
+        description: 'Failed to save avatar locally. Your browser storage may be full.',
+      });
+      return;
     }
 
-    savedAvatar.value = avatarData
+    savedAvatar.value = avatarData;
 
     try {
-      avatarStore.setAvatar(finalUsername, avatarOptions.value)
-      console.log('Avatar saved to store')
+      avatarStore.setAvatar(finalUsername, avatarOptions.value);
+      console.log('Avatar saved to store');
     } catch (storeError) {
-      console.error('Error saving to avatar store:', storeError)
+      console.error('Error saving to avatar store:', storeError);
       alerts.showError({
         title: 'Store Save Failed',
-        description: 'Failed to save avatar to application store.'
-      })
-      return
+        description: 'Failed to save avatar to application store.',
+      });
+      return;
     }
 
     try {
       if (!authStore.getClientId) {
-        console.log('Fetching clientId...')
-        await authStore.fetchClientId()
+        console.log('Fetching clientId...');
+        await authStore.fetchClientId();
       }
     } catch (clientIdError) {
-      console.error('Error fetching client ID:', clientIdError)
+      console.error('Error fetching client ID:', clientIdError);
       alerts.showWarning({
         title: 'Server Connection Issue',
-        description: 'Avatar saved locally but could not connect to server. Your avatar will sync when connection is restored.'
-      })
-      return
+        description:
+          'Avatar saved locally but could not connect to server. Your avatar will sync when connection is restored.',
+      });
+      return;
     }
 
-    let serverAddress
+    let serverAddress;
     try {
-      serverAddress = await serverAddressStore.getServerAddress()
+      serverAddress = await serverAddressStore.getServerAddress();
     } catch (serverAddressError) {
-      console.error('Error getting server address:', serverAddressError)
+      console.error('Error getting server address:', serverAddressError);
       alerts.showWarning({
         title: 'Server Address Error',
-        description: 'Avatar saved locally but could not get server address. Check your network settings.'
-      })
-      return
+        description:
+          'Avatar saved locally but could not get server address. Check your network settings.',
+      });
+      return;
     }
 
     console.log('Server info:', {
       serverAddress,
       clientId: authStore.getClientId,
       hasServerAddress: !!serverAddress,
-      hasClientId: !!authStore.getClientId
-    })
+      hasClientId: !!authStore.getClientId,
+    });
 
     if (serverAddress && authStore.getClientId) {
-      console.log('Attempting to save avatar to server...')
+      console.log('Attempting to save avatar to server...');
       try {
-        await updateUser(serverAddress, authStore.getClientId, finalUsername, avatarJson.options)
+        await updateUser(serverAddress, authStore.getClientId, finalUsername, avatarJson.options);
         alerts.showSuccess({
           title: 'Avatar Saved Successfully',
-          description: 'Your avatar has been saved both locally and to the server.'
-        })
+          description: 'Your avatar has been saved both locally and to the server.',
+        });
 
         // Navigate to game page after successful save
-        router.push('/')
+        router.push('/');
       } catch (serverError) {
-        console.error('Server save failed:', serverError)
+        console.error('Server save failed:', serverError);
 
-        const error = serverError as any
-        if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' ||
-            error.code === 'ENOTFOUND' || error.message?.includes('Network Error')) {
+        const error = serverError as any;
+        if (
+          error.code === 'ERR_NETWORK' ||
+          error.code === 'ECONNREFUSED' ||
+          error.code === 'ENOTFOUND' ||
+          error.message?.includes('Network Error')
+        ) {
           alerts.showWarning({
             title: 'Network Error',
-            description: 'Avatar saved locally but could not sync to server. Check your network connection.'
-          })
+            description:
+              'Avatar saved locally but could not sync to server. Check your network connection.',
+          });
         } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
           alerts.showWarning({
             title: 'Connection Timeout',
-            description: 'Avatar saved locally but server request timed out. Will retry automatically.'
-          })
+            description:
+              'Avatar saved locally but server request timed out. Will retry automatically.',
+          });
         } else if (error.response) {
-          const status = error.response.status
-          const data = error.response.data
+          const status = error.response.status;
+          const data = error.response.data;
 
           if (status === 400) {
             alerts.showError({
               title: 'Invalid Data',
-              description: `Avatar data was rejected by server: ${data?.message || 'Invalid request format'}`
-            })
+              description: `Avatar data was rejected by server: ${data?.message || 'Invalid request format'}`,
+            });
           } else if (status === 401) {
             alerts.showError({
               title: 'Authentication Failed',
-              description: 'Your session has expired. Please log in again.'
-            })
+              description: 'Your session has expired. Please log in again.',
+            });
           } else if (status === 403) {
             alerts.showError({
               title: 'Permission Denied',
-              description: 'You do not have permission to update this avatar.'
-            })
+              description: 'You do not have permission to update this avatar.',
+            });
           } else if (status === 404) {
             // User not found - try to create the user
-            console.log('User not found, attempting to create user...')
+            console.log('User not found, attempting to create user...');
             try {
-              await createUser(serverAddress, finalUsername, authStore.getClientId, avatarJson.options)
+              await createUser(
+                serverAddress,
+                finalUsername,
+                authStore.getClientId,
+                avatarJson.options
+              );
               alerts.showSuccess({
                 title: 'User Created & Avatar Saved',
-                description: 'New user account created and avatar saved successfully.'
-              })
+                description: 'New user account created and avatar saved successfully.',
+              });
               // Navigate to game page after successful creation
-              router.push('/')
+              router.push('/');
             } catch (createError) {
-              console.error('Failed to create user:', createError)
+              console.error('Failed to create user:', createError);
               alerts.showError({
                 title: 'User Creation Failed',
-                description: 'Could not create user account on server. Avatar saved locally.'
-              })
+                description: 'Could not create user account on server. Avatar saved locally.',
+              });
             }
           } else if (status === 409) {
             alerts.showError({
               title: 'Conflict',
-              description: 'Avatar update conflict. Another device may have updated this profile.'
-            })
+              description: 'Avatar update conflict. Another device may have updated this profile.',
+            });
           } else if (status === 422) {
             alerts.showError({
               title: 'Validation Error',
-              description: `Avatar validation failed: ${data?.message || 'Invalid avatar data'}`
-            })
+              description: `Avatar validation failed: ${data?.message || 'Invalid avatar data'}`,
+            });
           } else if (status >= 500) {
             alerts.showWarning({
               title: 'Server Error',
-              description: 'The server is experiencing issues. Avatar saved locally and will sync later.'
-            })
+              description:
+                'The server is experiencing issues. Avatar saved locally and will sync later.',
+            });
           } else {
             alerts.showError({
               title: 'Server Error',
-              description: `Server returned error ${status}: ${data?.message || 'Unknown server error'}`
-            })
+              description: `Server returned error ${status}: ${data?.message || 'Unknown server error'}`,
+            });
           }
         } else if (error.request) {
           alerts.showWarning({
             title: 'No Response',
-            description: 'Avatar saved locally but no response from server. Check your connection.'
-          })
+            description: 'Avatar saved locally but no response from server. Check your connection.',
+          });
         } else {
           alerts.showError({
             title: 'Unexpected Error',
-            description: `Failed to save avatar to server: ${error.message || 'Unknown error occurred'}`
-          })
+            description: `Failed to save avatar to server: ${error.message || 'Unknown error occurred'}`,
+          });
         }
       }
     } else {
       console.warn('Could not save to server - missing data:', {
         serverAddress: !!serverAddress,
-        clientId: !!authStore.getClientId
-      })
+        clientId: !!authStore.getClientId,
+      });
 
       alerts.showWarning({
         title: 'Server Save Skipped',
-        description: 'Avatar saved locally but server information is missing.'
-      })
+        description: 'Avatar saved locally but server information is missing.',
+      });
 
       // Navigate to game page even if server save failed but local save succeeded
-      router.push('/')
+      router.push('/');
     }
-
   } catch (error) {
-    console.error('Error saving avatar:', error)
-    const err = error as any
+    console.error('Error saving avatar:', error);
+    const err = error as any;
     alerts.showError({
       title: 'Unexpected Error',
-      description: `An unexpected error occurred while saving your avatar: ${err.message || 'Unknown error'}`
-    })
+      description: `An unexpected error occurred while saving your avatar: ${err.message || 'Unknown error'}`,
+    });
   } finally {
-    isSaving.value = false
+    isSaving.value = false;
   }
 }
 
 // Lifecycle
 onMounted(async () => {
   try {
-    isLoading.value = true
-    await avatarStore.initialize()
+    isLoading.value = true;
+    await avatarStore.initialize();
 
     try {
-      username.value = authStore.getUsername || ''
+      username.value = authStore.getUsername || '';
     } catch (usernameError) {
-      console.error('Error loading username from auth store:', usernameError)
+      console.error('Error loading username from auth store:', usernameError);
       alerts.showWarning({
         title: 'Username Load Warning',
-        description: 'Could not load saved username. You may need to enter it manually.'
-      })
+        description: 'Could not load saved username. You may need to enter it manually.',
+      });
     }
 
     try {
-      const savedOptions = avatarStore.getAvatarOptions
+      const savedOptions = avatarStore.getAvatarOptions;
       if (savedOptions) {
-        avatarOptions.value = { ...savedOptions }
+        avatarOptions.value = { ...savedOptions };
         savedAvatar.value = {
           username: avatarStore.getUsername,
           options: savedOptions,
-          timestamp: Date.now()
-        }
+          timestamp: Date.now(),
+        };
       }
     } catch (avatarLoadError) {
-      console.error('Error loading saved avatar options:', avatarLoadError)
+      console.error('Error loading saved avatar options:', avatarLoadError);
       alerts.showWarning({
         title: 'Avatar Load Warning',
-        description: 'Could not load your saved avatar. Starting with default options.'
-      })
+        description: 'Could not load your saved avatar. Starting with default options.',
+      });
     }
   } catch (initError) {
-    console.error('Error during component initialization:', initError)
+    console.error('Error during component initialization:', initError);
     alerts.showError({
       title: 'Initialization Error',
-      description: 'There was an error loading the avatar editor. Please refresh the page.'
-    })
+      description: 'There was an error loading the avatar editor. Please refresh the page.',
+    });
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 </script>
 
 <style scoped>
@@ -1545,9 +1675,9 @@ onMounted(async () => {
 }
 
 .stats {
-  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 1280px) {

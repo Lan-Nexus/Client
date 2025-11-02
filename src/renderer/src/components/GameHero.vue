@@ -22,9 +22,9 @@ const formatTime = (dateString: string) => {
   return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-
-
-const getTimeRemaining = (dateString: string): { days: string; hours: string; minutes: string; seconds: string } => {
+const getTimeRemaining = (
+  dateString: string
+): { days: string; hours: string; minutes: string; seconds: string } => {
   const now = new Date();
   const target = new Date(dateString);
   const diff = target.getTime() - now.getTime();
@@ -42,7 +42,7 @@ const getTimeRemaining = (dateString: string): { days: string; hours: string; mi
     days: `${daysValue}`,
     hours: `${hoursValue}`,
     minutes: `${minutesValue}`,
-    seconds: `${secondsValue}`
+    seconds: `${secondsValue}`,
   };
 };
 
@@ -62,9 +62,13 @@ const updateCountdown = () => {
 };
 
 // Watch for changes in nextGame and update countdown immediately
-watch(nextGame, () => {
-  updateCountdown();
-}, { immediate: true });
+watch(
+  nextGame,
+  () => {
+    updateCountdown();
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   calendarStore.loadScheduledGames();
@@ -88,12 +92,14 @@ onUnmounted(() => {
     clearInterval(timeUpdateInterval);
   }
 });
-
 </script>
 <template>
   <div class="hero-container mb-6">
     <!-- Current Game Hero -->
-    <div v-if="currentGame" class="hero min-h-[300px] bg-gradient-to-r from-primary to-secondary rounded-lg mb-4 relative overflow-hidden">
+    <div
+      v-if="currentGame"
+      class="hero min-h-[300px] bg-gradient-to-r from-primary to-secondary rounded-lg mb-4 relative overflow-hidden"
+    >
       <div class="hero-overlay bg-opacity-60"></div>
       <div class="hero-content text-neutral-content text-center relative z-10">
         <div class="max-w-md">
@@ -106,7 +112,10 @@ onUnmounted(() => {
           <div class="flex justify-center items-center gap-6 text-sm">
             <div class="flex items-center gap-2">
               <FontAwesomeIcon :icon="faClock" />
-              <span>{{ formatTime(currentGame.startTime) }} - {{ formatTime(currentGame.endTime) }}</span>
+              <span
+                >{{ formatTime(currentGame.startTime) }} -
+                {{ formatTime(currentGame.endTime) }}</span
+              >
             </div>
             <div v-if="currentGame.participants" class="flex items-center gap-2">
               <FontAwesomeIcon :icon="faUsers" />
@@ -117,12 +126,17 @@ onUnmounted(() => {
       </div>
       <!-- Background pattern -->
       <div class="absolute inset-0 opacity-10">
-        <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white to-transparent transform rotate-12 scale-150"></div>
+        <div
+          class="absolute inset-0 bg-gradient-to-br from-transparent via-white to-transparent transform rotate-12 scale-150"
+        ></div>
       </div>
     </div>
 
     <!-- Next Game Preview -->
-    <div v-else-if="nextGame" class="hero min-h-[200px] bg-base-200 rounded-lg relative overflow-hidden border-2 border-primary">
+    <div
+      v-else-if="nextGame"
+      class="hero min-h-[200px] bg-base-200 rounded-lg relative overflow-hidden border-2 border-primary"
+    >
       <div class="hero-content text-center">
         <div class="max-w-md">
           <div class="flex items-center justify-center mb-4">
@@ -136,32 +150,49 @@ onUnmounted(() => {
               <template v-if="days != '0'">
                 <div class="flex flex-col">
                   <span class="countdown font-mono text-5xl">
-                    <span :style="`--value:${days};`" aria-live="polite" aria-label="{{ days }}">{{ days }}</span>
+                    <span :style="`--value:${days};`" aria-live="polite" aria-label="{{ days }}">{{
+                      days
+                    }}</span>
                   </span>
                   days
                 </div>
               </template>
               <div class="flex flex-col">
                 <span class="countdown font-mono text-5xl">
-                  <span :style="`--value:${hours};`" aria-live="polite" aria-label="{{ hours }}">{{ hours }}</span>
+                  <span :style="`--value:${hours};`" aria-live="polite" aria-label="{{ hours }}">{{
+                    hours
+                  }}</span>
                 </span>
                 hours
               </div>
               <div class="flex flex-col">
                 <span class="countdown font-mono text-5xl">
-                  <span :style="`--value:${minutes};`" aria-live="polite" aria-label="{{ minutes }}">{{ minutes }}</span>
+                  <span
+                    :style="`--value:${minutes};`"
+                    aria-live="polite"
+                    aria-label="{{ minutes }}"
+                    >{{ minutes }}</span
+                  >
                 </span>
                 min
               </div>
               <div class="flex flex-col">
                 <span class="countdown font-mono text-5xl">
-                  <span :style="`--value:${seconds};`" aria-live="polite" aria-label="{{ seconds }}">{{ seconds }}</span>
+                  <span
+                    :style="`--value:${seconds};`"
+                    aria-live="polite"
+                    aria-label="{{ seconds }}"
+                    >{{ seconds }}</span
+                  >
                 </span>
                 sec
               </div>
             </div>
           </div>
-          <div v-if="nextGame.participants" class="mt-3 flex items-center justify-center gap-2 text-sm">
+          <div
+            v-if="nextGame.participants"
+            class="mt-3 flex items-center justify-center gap-2 text-sm"
+          >
             <FontAwesomeIcon :icon="faUsers" />
             <span>{{ nextGame.participants.length }} players registered</span>
           </div>
@@ -188,13 +219,15 @@ onUnmounted(() => {
 
 .hero {
   position: relative;
-  background-image: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
-                    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%),
-                    radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3), transparent 50%);
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3), transparent 50%);
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 5px rgba(var(--p), 0.3);
   }
   50% {

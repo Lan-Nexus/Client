@@ -1,5 +1,8 @@
 <template>
-  <div v-if="isActiveGameRunning" class="m-2 p-2 bg-green-200 rounded-lg shadow-md flex items-center gap-2">
+  <div
+    v-if="isActiveGameRunning"
+    class="m-2 p-2 bg-green-200 rounded-lg shadow-md flex items-center gap-2"
+  >
     <div class="flex items-center gap-1 w-full">
       <div class="avatar">
         <div class="w-6 h-6 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
@@ -20,7 +23,7 @@ const avatarStore = useAvatarStore();
 const gameStore = useGameStore();
 const runningStore = useRunningStore();
 
-const avatar = computed(() => avatarStore.get() || '');
+const avatar = computed(() => avatarStore.get() ?? undefined);
 const selectedGame = computed(() => gameStore.selectedGame);
 
 const isActiveGameRunning = computed(() => {
