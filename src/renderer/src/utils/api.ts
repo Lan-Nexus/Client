@@ -35,13 +35,14 @@ export async function getIpAddress(serverAddress: string) {
   return response.data.ip;
 }
 
-export async function createUser(serverAddress: string, name: string, clientId: string) {
+export async function createUser(serverAddress: string, name: string, clientId: string, avatar?: object) {
+  const payload: { name: string; clientId: string; avatar?: object } = { name, clientId };
+  if (avatar) {
+    payload.avatar = avatar;
+  }
   const response = await axios.post(
     `${serverAddress}/api/users`,
-    {
-      name,
-      clientId,
-    },
+    payload,
     {
       headers: {
         'Content-Type': 'application/json',
@@ -51,12 +52,15 @@ export async function createUser(serverAddress: string, name: string, clientId: 
   return response.data;
 }
 
-export async function updateUser(serverAddress: string, clientId: string, name: string) {
+export async function updateUser(serverAddress: string, clientId: string, name: string, avatar?: object) {
+  const payload: { name: string; avatar?: object } = { name };
+  if (avatar) {
+    payload.avatar = avatar;
+  }
+
   const response = await axios.patch(
     `${serverAddress}/api/users/update-by-client-id/${clientId}`,
-    {
-      name,
-    },
+    payload,
     {
       headers: {
         'Content-Type': 'application/json',
