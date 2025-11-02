@@ -67,7 +67,7 @@ export async function updateUser(serverAddress: string, clientId: string, name: 
       },
     }
   );
-return response.data;
+  return response.data;
 }
 
 export function generateFakeName(): string {
