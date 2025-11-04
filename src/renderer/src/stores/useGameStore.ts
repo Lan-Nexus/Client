@@ -17,6 +17,7 @@ export const useGameStore = defineStore('game', {
     selectedGameId: -1,
     gameRunning: void 0 as gameState | undefined,
     loading: false,
+    gameStoppedTime: null as number | null,
   }),
   getters: {
     selectedGame: (state) => {
@@ -56,10 +57,29 @@ export const useGameStore = defineStore('game', {
 
         const isRunning = programs.includes(this.gameRunning.executable);
         if (!isRunning) {
-          if (this.gameRunning.needsKey && this.gameRunning.gamekey?.id != null) {
-            await this.releaseGameKey(this.gameRunning.id);
+          // Game is not running
+          if (this.gameStoppedTime === null) {
+            // First time detecting game has stopped
+            this.gameStoppedTime = Date.now();
+            logger.log('Game stopped detected, starting 5-second delay before key release');
+          } else {
+            // Check if 5 seconds have passed since game stopped
+            const timeSinceStop = Date.now() - this.gameStoppedTime;
+            if (timeSinceStop >= 5000) {
+              if (this.gameRunning.needsKey && this.gameRunning.gamekey?.id != null) {
+                await this.releaseGameKey(this.gameRunning.id);
+              }
+              this.gameRunning = void 0;
+              this.gameStoppedTime = null;
+              logger.log('Game key released after 5-second delay');
+            }
           }
-          this.gameRunning = void 0;
+        } else {
+          // Game is running, reset the stopped time
+          if (this.gameStoppedTime !== null) {
+            logger.log('Game resumed running, canceling key release');
+            this.gameStoppedTime = null;
+          }
         }
       } catch (error) {
         logger.error('Failed to check if game has stopped:', error);
@@ -71,10 +91,13 @@ export const useGameStore = defineStore('game', {
       const alerts = useAlerts();
       try {
         if (this.selectedGame?.gamekey?.id != void 0) {
-          await releaseGameKey(serverAddressStore.serverAddress!, gameId, this.selectedGame.gamekey.id);
+          await releaseGameKey(
+            serverAddressStore.serverAddress!,
+            gameId,
+            this.selectedGame.gamekey.id
+          );
           logger.log('Game key released successfully');
         }
-
       } catch (error) {
         logger.error('Failed to release game key:', error);
         let description = 'Failed to release game key.';
@@ -91,7 +114,11 @@ export const useGameStore = defineStore('game', {
       await authStore.fetchClientId();
       const alerts = useAlerts();
       try {
-        const data = await reserveGameKey(serverAddressStore.serverAddress!, gameId, authStore.getClientId);
+        const data = await reserveGameKey(
+          serverAddressStore.serverAddress!,
+          gameId,
+          authStore.getClientId
+        );
         logger.log('Game key reserved:', data);
         return data;
       } catch (error) {
@@ -113,7 +140,10 @@ export const useGameStore = defineStore('game', {
       const game = this._findSelectedGame();
       if (!game || !game.archives) {
         logger.error('Game not found or no archive available for installation.');
-        alerts.showError({ title: 'Install Failed', description: 'Game not found or no archive available for installation.' });
+        alerts.showError({
+          title: 'Install Failed',
+          description: 'Game not found or no archive available for installation.',
+        });
         this.loading = false;
         return;
       }
@@ -123,18 +153,30 @@ export const useGameStore = defineStore('game', {
       const progressStore = useProgressStore();
       progressStore.active = true;
       try {
-        const url = serverAddressStore.serverAddress + game.archives
+        const url = serverAddressStore.serverAddress + game.archives;
         await functions.download(url, archiveFile);
         await functions.unzip(archiveFile, safeName);
-        await functions.run(safeName, game.install, { GAME_KEY: game.gamekey?.key ?? '', GAME_ID: String(game.gameID), GAME_NAME: game.name, GAME_EXECUTABLE: game.executable || '' });
+        await functions.run(safeName, game.install, {
+          GAME_KEY: game.gamekey?.key ?? '',
+          GAME_ID: String(game.gameID),
+          GAME_NAME: game.name,
+          GAME_EXECUTABLE: game.executable || '',
+        });
         await functions.clearTemp();
         game.isInstalled = true;
-        alerts.showSuccess({ title: 'Install Success', description: 'Game installed successfully!' });
+        alerts.showSuccess({
+          title: 'Install Success',
+          description: 'Game installed successfully!',
+        });
       } catch (error) {
         logger.error(error);
         this.uninstallArchive(true);
         await functions.clearTemp();
-        alerts.showError({ title: 'Install Failed', description: 'Failed to install game.<br>' + (error instanceof Error ? error.message : '') });
+        alerts.showError({
+          title: 'Install Failed',
+          description:
+            'Failed to install game.<br>' + (error instanceof Error ? error.message : ''),
+        });
       } finally {
         progressStore.active = false;
         this.loading = false;
@@ -150,7 +192,10 @@ export const useGameStore = defineStore('game', {
       progressStore.active = false;
       const game = this._findSelectedGame();
       if (!game) {
-        alerts.showError({ title: 'Uninstall Failed', description: 'Game not found for uninstall.' });
+        alerts.showError({
+          title: 'Uninstall Failed',
+          description: 'Game not found for uninstall.',
+        });
         return;
       }
       const safeName = game.gameID.replaceAll(' ', '-');
@@ -159,7 +204,10 @@ export const useGameStore = defineStore('game', {
         await functions.removeGame(safeName);
         game.isInstalled = false;
         if (!hideAlerts) {
-          alerts.showSuccess({ title: 'Uninstall Success', description: 'Game uninstalled successfully!' });
+          alerts.showSuccess({
+            title: 'Uninstall Success',
+            description: 'Game uninstalled successfully!',
+          });
         }
       } catch (error) {
         logger.error(error);
@@ -180,7 +228,10 @@ export const useGameStore = defineStore('game', {
       await authStore.fetchClientId();
 
       try {
-        const gamesData = await apiLoadGames(serverAddressStore.serverAddress!, authStore.getClientId);
+        const gamesData = await apiLoadGames(
+          serverAddressStore.serverAddress!,
+          authStore.getClientId
+        );
         this.games = await this._addInstallStatusToGames(gamesData);
       } catch (error) {
         logger.error('Failed to load games:', error);
@@ -238,7 +289,7 @@ export const useGameStore = defineStore('game', {
       if (selectedGame.type === 'archive') {
         const game = this._findSelectedGame();
         if (game && game.needsKey) {
-          game.gamekey = await this.reserveGameKey(game.id)
+          game.gamekey = await this.reserveGameKey(game.id);
         }
         this.gameRunning = selectedGame;
         await this.playArchive();
@@ -268,7 +319,6 @@ export const useGameStore = defineStore('game', {
         GAME_EXECUTABLE: game.executable || '',
       });
       logger.log(`Playing game: ${game.name}`);
-
     },
   },
 });
