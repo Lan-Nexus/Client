@@ -7,6 +7,7 @@ import Logger from '@renderer/utils/logger.js';
 import { useServerAddressStore } from './useServerAddress.js';
 import { useAlerts } from './useAlerts.js';
 import { reserveGameKey, releaseGameKey, loadGames as apiLoadGames } from '../utils/api.js';
+import { websocketService } from '../services/websocketService.js';
 
 const logger = Logger('useGameStore');
 
@@ -17,7 +18,8 @@ export const useGameStore = defineStore('game', {
     selectedGameId: -1,
     gameRunning: void 0 as gameState | undefined,
     loading: false,
-    gameStoppedTime: null as number | null,
+    gameHasStarted: false,
+    websocketConnected: false,
   }),
   getters: {
     selectedGame: (state) => {
@@ -37,6 +39,80 @@ export const useGameStore = defineStore('game', {
       return this.games.find((game) => game.id === this.selectedGameId);
     },
 
+    async initializeWebSocket() {
+      try {
+        await websocketService.connect();
+        this.websocketConnected = websocketService.getConnectionStatus();
+        logger.log('WebSocket initialized:', this.websocketConnected);
+      } catch (error) {
+        logger.error('Failed to initialize WebSocket:', error);
+      }
+    },
+
+    async checkWebSocketConnection() {
+      const currentStatus = websocketService.getConnectionStatus();
+      if (this.websocketConnected !== currentStatus) {
+        this.websocketConnected = currentStatus;
+        logger.log('WebSocket connection status changed:', currentStatus);
+
+        if (!currentStatus) {
+          logger.log('WebSocket disconnected, attempting to reconnect...');
+          try {
+            await websocketService.connect();
+            this.websocketConnected = websocketService.getConnectionStatus();
+            logger.log('WebSocket reconnection result:', this.websocketConnected);
+          } catch (error) {
+            logger.error('Failed to reconnect WebSocket:', error);
+          }
+        }
+      }
+    },
+
+    // Manual test methods for websocket functionality
+    async testWebSocketConnection(): Promise<boolean> {
+      try {
+        if (!this.websocketConnected) {
+          await this.initializeWebSocket();
+        }
+        return websocketService.getConnectionStatus();
+      } catch (error) {
+        logger.error('Failed to test websocket connection:', error);
+        return false;
+      }
+    },
+
+    async testStartSession(gameId?: number): Promise<boolean> {
+      const testGameId = gameId || this.selectedGameId || 1;
+      logger.log('Testing session start for game ID:', testGameId);
+      return await websocketService.startGameSession(testGameId);
+    },
+
+    async testEndSession(): Promise<boolean> {
+      logger.log('Testing session end');
+      return await websocketService.endGameSession();
+    },
+
+    getCurrentSessionInfo() {
+      return {
+        session: websocketService.getCurrentSession(),
+        isActive: websocketService.isSessionActive(),
+        connectionStatus: websocketService.getConnectionStatus(),
+        websocketConnected: this.websocketConnected,
+      };
+    },
+
+    setupIntervals() {
+      // Watch for game stopped every second
+      setInterval(() => {
+        this.watchIfGameStopped();
+      }, 1000);
+
+      // Monitor websocket connection every 30 seconds
+      setInterval(() => {
+        this.checkWebSocketConnection();
+      }, 30000);
+    },
+
     autoRefreshGames() {
       const refreshRate = 600 * 1000;
       logger.log(`Auto-refreshing games every ${refreshRate / 1000} seconds`);
@@ -52,35 +128,42 @@ export const useGameStore = defineStore('game', {
 
     async watchIfGameStopped() {
       if (!this.gameRunning || this.gameRunning.type !== 'archive') return;
+
       try {
         const programs = await functions.getRunningPrograms();
-
         const isRunning = programs.includes(this.gameRunning.executable);
-        if (!isRunning) {
-          // Game is not running
-          if (this.gameStoppedTime === null) {
-            // First time detecting game has stopped
-            this.gameStoppedTime = Date.now();
-            logger.log('Game stopped detected, starting 5-second delay before key release');
-          } else {
-            // Check if 5 seconds have passed since game stopped
-            const timeSinceStop = Date.now() - this.gameStoppedTime;
-            if (timeSinceStop >= 5000) {
-              if (this.gameRunning.needsKey && this.gameRunning.gamekey?.id != null) {
-                await this.releaseGameKey(this.gameRunning.id);
-              }
-              this.gameRunning = void 0;
-              this.gameStoppedTime = null;
-              logger.log('Game key released after 5-second delay');
-            }
+
+        if (!this.gameHasStarted) {
+          // Wait for the game to actually start before monitoring for stop
+          if (isRunning) {
+            this.gameHasStarted = true;
+            logger.log('Game has started, now monitoring for game stop');
           }
-        } else {
-          // Game is running, reset the stopped time
-          if (this.gameStoppedTime !== null) {
-            logger.log('Game resumed running, canceling key release');
-            this.gameStoppedTime = null;
+          return;
+        }
+
+        if (isRunning) {
+          // Game is still running, nothing to do
+          return;
+        }
+
+        // Game has stopped after starting
+        logger.log('Game stopped detected, releasing key immediately');
+
+        // End the websocket session before releasing the key
+        if (websocketService.isSessionActive()) {
+          const sessionEnded = await websocketService.endGameSession();
+          if (!sessionEnded) {
+            logger.warn('Failed to properly end websocket session');
           }
         }
+
+        if (this.gameRunning.needsKey && this.gameRunning.gamekey?.id != null) {
+          await this.releaseGameKey(this.gameRunning.id);
+        }
+        this.gameRunning = void 0;
+        this.gameHasStarted = false;
+        logger.log('Game session ended and key released');
       } catch (error) {
         logger.error('Failed to check if game has stopped:', error);
       }
@@ -292,6 +375,12 @@ export const useGameStore = defineStore('game', {
           game.gamekey = await this.reserveGameKey(game.id);
         }
         this.gameRunning = selectedGame;
+        this.gameHasStarted = false;
+        // Start websocket session
+        const sessionStarted = await websocketService.startGameSession(selectedGame.id);
+        if (!sessionStarted) {
+          logger.warn('Failed to start websocket session, but continuing with game launch');
+        }
         await this.playArchive();
         return;
       }
@@ -300,6 +389,15 @@ export const useGameStore = defineStore('game', {
     async playSteam() {
       const selectedGame = this.selectedGame;
       if (selectedGame && selectedGame.type === 'steam') {
+        // Start websocket session for Steam games too
+        const sessionStarted = await websocketService.startGameSession(selectedGame.id);
+        if (!sessionStarted) {
+          logger.warn(
+            'Failed to start websocket session for Steam game, but continuing with launch'
+          );
+        }
+        this.gameRunning = selectedGame;
+        this.gameHasStarted = false;
         document.location.href = `steam://run/${selectedGame.gameID}`;
       }
     },
@@ -322,7 +420,3 @@ export const useGameStore = defineStore('game', {
     },
   },
 });
-
-setInterval(() => {
-  useGameStore().watchIfGameStopped();
-}, 1000);
