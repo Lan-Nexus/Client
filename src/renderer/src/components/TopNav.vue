@@ -8,7 +8,7 @@ import {
   faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import { computed, onMounted } from 'vue';
-import { createAvatar } from '@dicebear/core';
+import { BackgroundType, createAvatar } from '@dicebear/core';
 import { adventurer } from '@dicebear/collection';
 import { useAvatarStore } from '../stores/useAvatarStore';
 import { websocketService } from '../services/websocketService.js';
@@ -23,7 +23,21 @@ const avatarStore = useAvatarStore();
 // Generate avatar from options
 function generateAvatarFromOptions(options): string {
   try {
-    const avatarConfig = {
+    const avatarConfig: {
+      size: number;
+      backgroundColor: string[];
+      backgroundType: BackgroundType[];
+      eyes: adventurer.Options['eyes'];
+      eyebrows: adventurer.Options['eyebrows'];
+      mouth: adventurer.Options['mouth'];
+      hair: adventurer.Options['hair'];
+      skinColor: adventurer.Options['skinColor'];
+      hairColor: adventurer.Options['hairColor'];
+      earrings?: adventurer.Options['earrings'];
+      earringsProbability?: number;
+      glasses?: adventurer.Options['glasses'];
+      glassesProbability?: number;
+    } = {
       size: 48,
       backgroundColor: options.backgroundColor || ['transparent'],
       backgroundType: options.backgroundType || ['solid'],

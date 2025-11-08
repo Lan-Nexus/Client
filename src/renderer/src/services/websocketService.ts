@@ -23,7 +23,7 @@ export class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
-  private isReconnecting = false;
+  private _isReconnecting = false;
   private shouldReconnect = true;
 
   private constructor() {
@@ -70,7 +70,7 @@ export class WebSocketService {
         logger.log('WebSocket connected successfully');
         this.isConnected = true;
         this.reconnectAttempts = 0; // Reset counter on successful connection
-        this.isReconnecting = false;
+        this._isReconnecting = false;
         this.shouldReconnect = true; // Enable reconnection for future disconnects
         this.joinGameSessionsRoom();
       });
@@ -128,7 +128,7 @@ export class WebSocketService {
   }
 
   private scheduleReconnect(): void {
-    if (this.isReconnecting || !this.shouldReconnect) {
+    if (this._isReconnecting || !this.shouldReconnect) {
       return;
     }
 
@@ -147,7 +147,7 @@ export class WebSocketService {
       clearTimeout(this.reconnectTimeoutId);
     }
 
-    this.isReconnecting = true;
+    this._isReconnecting = true;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Exponential backoff, max 30 seconds
     this.reconnectAttempts++;
 
@@ -157,7 +157,7 @@ export class WebSocketService {
 
     this.reconnectTimeoutId = setTimeout(async () => {
       if (!this.shouldReconnect) {
-        this.isReconnecting = false;
+        this._isReconnecting = false;
         return;
       }
 
@@ -169,14 +169,14 @@ export class WebSocketService {
         if (this.isConnected) {
           logger.log('Reconnection successful');
           this.reconnectAttempts = 0; // Reset counter on successful connection
-          this.isReconnecting = false;
+          this._isReconnecting = false;
         } else {
-          this.isReconnecting = false;
+          this._isReconnecting = false;
           this.scheduleReconnect(); // Schedule next attempt
         }
       } catch (error) {
         logger.error('Reconnection failed:', error);
-        this.isReconnecting = false;
+        this._isReconnecting = false;
         this.scheduleReconnect(); // Schedule next attempt
       }
     }, delay);
@@ -184,7 +184,7 @@ export class WebSocketService {
 
   disconnect(): void {
     this.shouldReconnect = false; // Stop automatic reconnection
-    this.isReconnecting = false;
+    this._isReconnecting = false;
 
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
@@ -293,7 +293,7 @@ export class WebSocketService {
   }
 
   isReconnecting(): boolean {
-    return this.isReconnecting;
+    return this._isReconnecting;
   }
 
   getReconnectAttempts(): number {
