@@ -29,7 +29,7 @@ function generateAvatarFromOptions(options): string {
       eyes: [options.eyes],
       eyebrows: [options.eyebrows],
       mouth: [options.mouth],
-      hairType: [options.hair],
+      hair: [options.hair],
       skinColor: [options.skinColor],
       hairColor: [options.hairColor],
       earrings: [options.earrings],
