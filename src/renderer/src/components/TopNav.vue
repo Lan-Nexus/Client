@@ -11,7 +11,6 @@ import { computed, onMounted } from 'vue';
 import { BackgroundType, createAvatar } from '@dicebear/core';
 import { adventurer } from '@dicebear/collection';
 import { useAvatarStore } from '../stores/useAvatarStore';
-import { websocketService } from '../services/websocketService.js';
 
 import { useGameStore } from '../stores/useGameStore.js';
 
@@ -133,9 +132,9 @@ onMounted(async () => {
     <div class="flex items-center gap-2 mr-4">
       <div
         :class="
-          websocketService.getConnectionStatus()
+          gameStore.websocketConnected
             ? 'bg-green-500'
-            : websocketService.isReconnecting()
+            : gameStore.websocketReconnecting
               ? 'bg-yellow-500 animate-pulse'
               : 'bg-red-500'
         "
@@ -143,10 +142,10 @@ onMounted(async () => {
       ></div>
       <span class="text-xs text-neutral-content/80">
         {{
-          websocketService.getConnectionStatus()
+          gameStore.websocketConnected
             ? 'Connected'
-            : websocketService.isReconnecting()
-              ? `Reconnecting (${websocketService.getReconnectAttempts()}/10)`
+            : gameStore.websocketReconnecting
+              ? `Reconnecting (${gameStore.websocketReconnectAttempts}/10)`
               : 'Disconnected'
         }}
       </span>
