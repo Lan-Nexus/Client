@@ -925,7 +925,7 @@ function randomizeAll(): void {
       hair: getRandomOption(hairOptions) as string,
       skinColor: getRandomOption(skinColorOptions) as string,
       hairColor: getRandomOption(hairColorOptions) as string,
-      backgroundColor: ['ffffff'],
+      backgroundColor: ['transparent'],
       backgroundType: ['solid'],
     };
 
