@@ -3,11 +3,17 @@ import { createPinia } from 'pinia';
 
 // FontAwesome setup
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCheckCircle, faCircleInfo, faTriangleExclamation, faCircleXmark } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCheckCircle,
+  faCircleInfo,
+  faTriangleExclamation,
+  faCircleXmark,
+} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 library.add(faCheckCircle, faCircleInfo, faTriangleExclamation, faCircleXmark);
 
 import './utils/logger.js';
+import { useGameStore } from './stores/useGameStore.js';
 
 declare global {
   interface Window {
@@ -16,10 +22,10 @@ declare global {
       onProgress: (callback: (amount: string, name: string) => void) => void;
       onProgressActive: (callback: (state: boolean) => void) => void;
       onProgressLoading: (callback: () => void) => void;
-    }
+    };
     api: {
-      function: (...args: any[]) => Promise<any>
-    }
+      function: (...args: any[]) => Promise<any>;
+    };
   }
 }
 
@@ -33,9 +39,21 @@ async function startApp() {
   app.component('FontAwesomeIcon', FontAwesomeIcon);
   app.mount('#app');
 
+  // Initialize WebSocket and intervals after Pinia is ready
+  // Add a small delay to ensure server address is available
+  setTimeout(async () => {
+    try {
+      const gameStore = useGameStore();
+      await gameStore.initializeWebSocket();
+      gameStore.setupIntervals();
+      console.log('✅ WebSocket and intervals initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize WebSocket and intervals:', error);
+    }
+  }, 500);
+
   // Example usage of the new bridge:
   // (You can remove this or adapt as needed)
-
 }
 
 async function waitForElectronAndStart() {
@@ -51,7 +69,9 @@ async function waitForElectronAndStart() {
       } else if ((waited += 50) >= 2000) {
         clearInterval(interval);
         console.error('Electron preload not detected after 2 seconds.');
-        window.alert('Failed to initialize the application. Please ensure you are running it in an Electron environment.');
+        window.alert(
+          'Failed to initialize the application. Please ensure you are running it in an Electron environment.'
+        );
       }
     }, 50);
   }
