@@ -106,7 +106,7 @@
         <div class="xl:col-span-2">
           <div class="card bg-base-100 shadow-lg">
             <div class="card-body">
-              <!-- Tabs -->
+              <!-- Main Tabs -->
               <div class="tabs tabs-boxed mb-6">
                 <button
                   class="tab"
@@ -114,16 +114,46 @@
                   @click="activeTab = 'presets'"
                 >
                   <FontAwesomeIcon :icon="faUsers" class="mr-2" />
-                  Character Presets
+                  Presets
                 </button>
                 <button
                   class="tab"
                   :class="{ 'tab-active': activeTab === 'customize' }"
                   @click="activeTab = 'customize'"
                 >
-                  <FontAwesomeIcon :icon="faCog" class="mr-2" />
+                  <FontAwesomeIcon :icon="faCut" class="mr-2" />
                   Customize
                 </button>
+              </div>
+
+              <!-- Sub-tabs for Customize -->
+              <div v-show="activeTab === 'customize'" class="mb-6">
+                <div class="tabs tabs-bordered">
+                  <button
+                    class="tab"
+                    :class="{ 'tab-active': customizeSubTab === 'face' }"
+                    @click="customizeSubTab = 'face'"
+                  >
+                    <FontAwesomeIcon :icon="faEye" class="mr-2" />
+                    Face
+                  </button>
+                  <button
+                    class="tab"
+                    :class="{ 'tab-active': customizeSubTab === 'hair' }"
+                    @click="customizeSubTab = 'hair'"
+                  >
+                    <FontAwesomeIcon :icon="faCut" class="mr-2" />
+                    Hair
+                  </button>
+                  <button
+                    class="tab"
+                    :class="{ 'tab-active': customizeSubTab === 'accessories' }"
+                    @click="customizeSubTab = 'accessories'"
+                  >
+                    <FontAwesomeIcon :icon="faGem" class="mr-2" />
+                    Accessories
+                  </button>
+                </div>
               </div>
 
               <!-- Presets Tab -->
@@ -139,8 +169,8 @@
                       v-for="preset in presetCharacters"
                       :key="preset.name"
                       class="preset-card cursor-pointer group"
-                      @click="loadPreset(preset)"
                       :title="`Load ${preset.name} preset`"
+                      @click="loadPreset(preset)"
                     >
                       <div
                         class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg"
@@ -165,392 +195,180 @@
                 </div>
               </div>
 
-              <!-- Customize Tab -->
-              <div v-show="activeTab === 'customize'" class="space-y-8">
-                <!-- Face Section -->
-                <div class="space-y-4">
-                  <div class="flex items-center gap-2 mb-4">
+              <!-- Face Tab -->
+              <div
+                v-show="activeTab === 'customize' && customizeSubTab === 'face'"
+                class="space-y-6"
+              >
+                <div>
+                  <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
                     <FontAwesomeIcon :icon="faEye" class="text-primary" />
-                    <h3 class="text-lg font-semibold">Facial Features</h3>
-                  </div>
+                    Facial Features
+                  </h3>
+                  <p class="text-base-content/70 mb-6">
+                    Customize your facial features including eyes, eyebrows, mouth, and skin tone
+                  </p>
 
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Eyes -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Eyes Style</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="eye in eyePreviews"
-                          :key="eye.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.eyes = String(eye.value);
-                            updateAvatar();
-                          "
-                          :title="eye.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.eyes === String(eye.value),
-                              'border-transparent': avatarOptions.eyes !== String(eye.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="eye.previewUrl"
-                                    :alt="eye.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Eyes Style"
+                      :options="eyesOptions"
+                      :selected-value="avatarOptions.eyes"
+                      :avatar-options="avatarOptions"
+                      feature-key="eyes"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.eyes = $event"
+                      @update-avatar="updateAvatar"
+                    />
 
                     <!-- Eyebrows -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Eyebrows</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="eyebrow in eyebrowPreviews"
-                          :key="eyebrow.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.eyebrows = String(eyebrow.value);
-                            updateAvatar();
-                          "
-                          :title="eyebrow.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.eyebrows === String(eyebrow.value),
-                              'border-transparent':
-                                avatarOptions.eyebrows !== String(eyebrow.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="eyebrow.previewUrl"
-                                    :alt="eyebrow.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Eyebrows"
+                      :options="eyebrowsOptions"
+                      :selected-value="avatarOptions.eyebrows"
+                      :avatar-options="avatarOptions"
+                      feature-key="eyebrows"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.eyebrows = $event"
+                      @update-avatar="updateAvatar"
+                    />
 
                     <!-- Mouth -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Mouth Expression</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="mouth in mouthPreviews"
-                          :key="mouth.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.mouth = String(mouth.value);
-                            updateAvatar();
-                          "
-                          :title="mouth.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.mouth === String(mouth.value),
-                              'border-transparent': avatarOptions.mouth !== String(mouth.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="mouth.previewUrl"
-                                    :alt="mouth.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Mouth Expression"
+                      :options="mouthOptions"
+                      :selected-value="avatarOptions.mouth"
+                      :avatar-options="avatarOptions"
+                      feature-key="mouth"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.mouth = $event"
+                      @update-avatar="updateAvatar"
+                    />
 
                     <!-- Skin Color -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Skin Tone</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="skin in skinColorPreviews"
-                          :key="skin.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.skinColor = String(skin.value);
-                            updateAvatar();
-                          "
-                          :title="skin.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.skinColor === String(skin.value),
-                              'border-transparent': avatarOptions.skinColor !== String(skin.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="skin.previewUrl"
-                                    :alt="skin.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Skin Tone"
+                      :options="skinColorOptions"
+                      :selected-value="avatarOptions.skinColor"
+                      :avatar-options="avatarOptions"
+                      feature-key="skinColor"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.skinColor = $event"
+                      @update-avatar="updateAvatar"
+                    />
+                  </div>
+
+                  <!-- Quick Actions for Face -->
+                  <div class="divider">Quick Actions</div>
+                  <div class="flex flex-wrap gap-3">
+                    <button class="btn btn-outline btn-sm" @click="randomizeFace">
+                      <FontAwesomeIcon :icon="faEye" class="mr-2" />
+                      Randomize Face
+                    </button>
                   </div>
                 </div>
+              </div>
 
-                <!-- Hair Section -->
-                <div class="space-y-4">
-                  <div class="flex items-center gap-2 mb-4">
+              <!-- Hair Tab -->
+              <div
+                v-show="activeTab === 'customize' && customizeSubTab === 'hair'"
+                class="space-y-6"
+              >
+                <div>
+                  <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
                     <FontAwesomeIcon :icon="faCut" class="text-primary" />
-                    <h3 class="text-lg font-semibold">Hair & Style</h3>
-                  </div>
+                    Hair & Style
+                  </h3>
+                  <p class="text-base-content/70 mb-6">
+                    Choose your hairstyle and hair color to complete your look
+                  </p>
 
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Hairstyle -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Hairstyle</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="hair in hairPreviews"
-                          :key="hair.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.hair = String(hair.value);
-                            updateAvatar();
-                          "
-                          :title="hair.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.hair === String(hair.value),
-                              'border-transparent': avatarOptions.hair !== String(hair.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="hair.previewUrl"
-                                    :alt="hair.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Hairstyle"
+                      :options="hairOptions"
+                      :selected-value="avatarOptions.hair"
+                      :avatar-options="avatarOptions"
+                      feature-key="hair"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.hair = $event"
+                      @update-avatar="updateAvatar"
+                    />
 
                     <!-- Hair Color -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Hair Color</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="hairColor in hairColorPreviews"
-                          :key="hairColor.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.hairColor = String(hairColor.value);
-                            updateAvatar();
-                          "
-                          :title="hairColor.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.hairColor === String(hairColor.value),
-                              'border-transparent':
-                                avatarOptions.hairColor !== String(hairColor.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="hairColor.previewUrl"
-                                    :alt="hairColor.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Hair Color"
+                      :options="hairColorOptions"
+                      :selected-value="avatarOptions.hairColor"
+                      :avatar-options="avatarOptions"
+                      feature-key="hairColor"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.hairColor = $event"
+                      @update-avatar="updateAvatar"
+                    />
+                  </div>
+
+                  <!-- Quick Actions for Hair -->
+                  <div class="divider">Quick Actions</div>
+                  <div class="flex flex-wrap gap-3">
+                    <button class="btn btn-outline btn-sm" @click="randomizeHair">
+                      <FontAwesomeIcon :icon="faCut" class="mr-2" />
+                      Randomize Hair
+                    </button>
                   </div>
                 </div>
+              </div>
 
-                <!-- Accessories Section -->
-                <div class="space-y-4">
-                  <div class="flex items-center gap-2 mb-4">
+              <!-- Accessories Tab -->
+              <div
+                v-show="activeTab === 'customize' && customizeSubTab === 'accessories'"
+                class="space-y-6"
+              >
+                <div>
+                  <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
                     <FontAwesomeIcon :icon="faGem" class="text-primary" />
-                    <h3 class="text-lg font-semibold">Accessories</h3>
-                  </div>
+                    Accessories
+                  </h3>
+                  <p class="text-base-content/70 mb-6">
+                    Add glasses, earrings, and other accessories to personalize your avatar
+                  </p>
 
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Glasses -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Glasses</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="glasses in glassesPreviews"
-                          :key="glasses.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.glasses = String(glasses.value);
-                            updateAvatar();
-                          "
-                          :title="glasses.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.glasses === String(glasses.value),
-                              'border-transparent': avatarOptions.glasses !== String(glasses.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="glasses.previewUrl"
-                                    :alt="glasses.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Glasses"
+                      :options="glassesOptions"
+                      :selected-value="avatarOptions.glasses"
+                      :avatar-options="avatarOptions"
+                      feature-key="glasses"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.glasses = $event"
+                      @update-avatar="updateAvatar"
+                    />
 
                     <!-- Earrings -->
-                    <div class="form-control">
-                      <label class="label">
-                        <span class="label-text font-medium">Earrings</span>
-                      </label>
-                      <div
-                        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mt-2"
-                      >
-                        <div
-                          v-for="earring in earringPreviews"
-                          :key="earring.value"
-                          class="cursor-pointer group"
-                          @click="
-                            avatarOptions.earrings = String(earring.value);
-                            updateAvatar();
-                          "
-                          :title="earring.label"
-                        >
-                          <div
-                            class="card bg-base-200 hover:bg-base-300 transition-all duration-200 group-hover:scale-105 border-2"
-                            :class="{
-                              'border-primary ring-2 ring-primary ring-opacity-50':
-                                avatarOptions.earrings === String(earring.value),
-                              'border-transparent':
-                                avatarOptions.earrings !== String(earring.value),
-                            }"
-                          >
-                            <div class="card-body p-1 items-center">
-                              <div class="avatar">
-                                <div class="w-16 h-16 rounded-full">
-                                  <img
-                                    :src="earring.previewUrl"
-                                    :alt="earring.label"
-                                    class="rounded-full"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AvatarFeatureSelector
+                      label="Earrings"
+                      :options="earringsOptions"
+                      :selected-value="avatarOptions.earrings"
+                      :avatar-options="avatarOptions"
+                      feature-key="earrings"
+                      :generate-avatar="generateAvatar"
+                      @update:selected-value="avatarOptions.earrings = $event"
+                      @update-avatar="updateAvatar"
+                    />
                   </div>
-                </div>
 
-                <!-- Quick Actions -->
-                <div class="divider">Quick Actions</div>
-                <div class="flex flex-wrap gap-3">
-                  <button @click="randomizeFace" class="btn btn-outline btn-sm">
-                    <FontAwesomeIcon :icon="faEye" class="mr-2" />
-                    Random Face
-                  </button>
-                  <button @click="randomizeHair" class="btn btn-outline btn-sm">
-                    <FontAwesomeIcon :icon="faCut" class="mr-2" />
-                    Random Hair
-                  </button>
-                  <button @click="randomizeAccessories" class="btn btn-outline btn-sm">
-                    <FontAwesomeIcon :icon="faGem" class="mr-2" />
-                    Random Accessories
-                  </button>
+                  <!-- Quick Actions for Accessories -->
+                  <div class="divider">Quick Actions</div>
+                  <div class="flex flex-wrap gap-3">
+                    <button class="btn btn-outline btn-sm" @click="randomizeAccessories">
+                      <FontAwesomeIcon :icon="faGem" class="mr-2" />
+                      Randomize Accessories
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -566,15 +384,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import {
-  faDice,
-  faSave,
-  faCog,
-  faUsers,
-  faEye,
-  faCut,
-  faGem,
-} from '@fortawesome/free-solid-svg-icons';
+import { faDice, faSave, faUsers, faEye, faCut, faGem } from '@fortawesome/free-solid-svg-icons';
 import { createAvatar } from '@dicebear/core';
 import { adventurer } from '@dicebear/collection';
 import { useAvatarStore } from '../stores/useAvatarStore';
@@ -583,6 +393,7 @@ import { useServerAddressStore } from '../stores/useServerAddress';
 import { useAlerts } from '../stores/useAlerts';
 import { updateUser, createUser } from '../utils/api';
 import Alert from '../components/Alert.vue';
+import AvatarFeatureSelector from '../components/AvatarFeatureSelector.vue';
 
 // Interfaces
 interface SavedAvatar {
@@ -591,27 +402,12 @@ interface SavedAvatar {
   timestamp: number;
 }
 
-interface AvatarOptions {
-  eyes: string;
-  eyebrows: string;
-  mouth: string;
-  glasses: string;
-  earrings: string;
-  hair: string;
-  skinColor: string;
-  hairColor: string;
-  backgroundColor?: string[];
-  backgroundType?: string[];
-}
+// Remove the local AvatarOptions definition and import it from a shared file
+import type { AvatarOptions, SelectOption } from '../types/AvatarOptions.js';
 
 interface PresetCharacter {
   name: string;
   options: AvatarOptions;
-}
-
-interface SelectOption {
-  value: string;
-  label: string;
 }
 
 // Stores and router
@@ -623,6 +419,7 @@ const alerts = useAlerts();
 
 // Reactive state
 const activeTab = ref('presets');
+const customizeSubTab = ref('face');
 const username = ref('');
 const avatarOptions = ref<AvatarOptions>({
   eyes: 'variant01',
@@ -1001,94 +798,6 @@ const currentAvatarUrl = computed(() => {
   return generateAvatar(avatarOptions.value);
 });
 
-// Generate preview images for each hair option
-const hairPreviews = computed(() => {
-  return hairOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      hair: String(option.value),
-    }),
-  }));
-});
-
-// Generate preview images for each eye option
-const eyePreviews = computed(() => {
-  return eyesOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      eyes: String(option.value),
-    }),
-  }));
-});
-
-// Generate preview images for each eyebrow option
-const eyebrowPreviews = computed(() => {
-  return eyebrowsOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      eyebrows: String(option.value),
-    }),
-  }));
-});
-
-// Generate preview images for each mouth option
-const mouthPreviews = computed(() => {
-  return mouthOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      mouth: String(option.value),
-    }),
-  }));
-});
-
-// Generate preview images for each glasses option
-const glassesPreviews = computed(() => {
-  return glassesOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      glasses: String(option.value),
-    }),
-  }));
-});
-
-// Generate preview images for each earring option
-const earringPreviews = computed(() => {
-  return earringsOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      earrings: String(option.value),
-    }),
-  }));
-});
-
-// Generate preview images for each skin color option
-const skinColorPreviews = computed(() => {
-  return skinColorOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      skinColor: String(option.value),
-    }),
-  }));
-});
-
-// Generate preview images for each hair color option
-const hairColorPreviews = computed(() => {
-  return hairColorOptions.map((option) => ({
-    ...option,
-    previewUrl: generateAvatar({
-      ...avatarOptions.value,
-      hairColor: String(option.value),
-    }),
-  }));
-});
-
 const customizationPercentage = computed(() => {
   let changes = 0;
   let total = 0;
@@ -1116,7 +825,7 @@ function generateAvatar(options: AvatarOptions, hideElements?: string[]): string
     if (!options || typeof options !== 'object') {
       throw new Error('Invalid avatar options provided');
     }
-    const avatarConfig: any = {
+    const avatarConfig: Record<string, unknown> = {
       size: 128,
       eyes: [options.eyes || 'variant01'],
       eyebrows: [options.eyebrows || 'variant01'],
@@ -1472,7 +1181,12 @@ async function saveAvatar(): Promise<void> {
       } catch (serverError) {
         console.error('Server save failed:', serverError);
 
-        const error = serverError as any;
+        const error = serverError as Error & {
+          code?: string;
+          response?: { status: number; data?: { message?: string } };
+          request?: unknown;
+          message: string;
+        };
         if (
           error.code === 'ERR_NETWORK' ||
           error.code === 'ECONNREFUSED' ||
@@ -1582,11 +1296,14 @@ async function saveAvatar(): Promise<void> {
     }
   } catch (error) {
     console.error('Error saving avatar:', error);
-    const err = error as any;
-    alerts.showError({
-      title: 'Unexpected Error',
-      description: `An unexpected error occurred while saving your avatar: ${err.message || 'Unknown error'}`,
-    });
+    const err = error as unknown;
+
+    if (err && typeof err === 'object' && 'message' in err) {
+      alerts.showError({
+        title: 'Unexpected Error',
+        description: `An unexpected error occurred while saving your avatar: ${err.message || 'Unknown error'}`,
+      });
+    }
   } finally {
     isSaving.value = false;
   }

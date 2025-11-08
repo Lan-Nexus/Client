@@ -21,16 +21,16 @@ const gameStore = useGameStore();
 const avatarStore = useAvatarStore();
 
 // Generate avatar from options
-function generateAvatarFromOptions(options: any): string {
+function generateAvatarFromOptions(options): string {
   try {
-    const avatarConfig: any = {
+    const avatarConfig = {
       size: 48,
       backgroundColor: options.backgroundColor || ['transparent'],
       backgroundType: options.backgroundType || ['solid'],
       eyes: [options.eyes],
       eyebrows: [options.eyebrows],
       mouth: [options.mouth],
-      hairType: [options.hair],
+      hair: [options.hair],
       skinColor: [options.skinColor],
       hairColor: [options.hairColor],
     };
@@ -142,7 +142,7 @@ onMounted(async () => {
       <font-awesome-icon :icon="faArrowsRotate" class="text-2xl" @click="gameStore.reload" />
     </button>
     <div>
-      <button class="btn btn-ghost text-neutral-content" @click="$router.push('/avatar')">
+      <button class="btn btn-ghost text-neutral-content w-15 h-15" @click="$router.push('/avatar')">
         <div v-if="avatarStore.hasAvatar && currentAvatarUrl" class="avatar">
           <div class="w-12 h-12 rounded-full">
             <img :src="currentAvatarUrl" alt="Your Avatar" class="rounded-full" />
