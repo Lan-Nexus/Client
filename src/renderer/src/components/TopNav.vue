@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faCog, faArrowsRotate, faGamepad, faCalendarDays, faUser } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCog,
+  faArrowsRotate,
+  faGamepad,
+  faCalendarDays,
+  faUser,
+} from '@fortawesome/free-solid-svg-icons';
 import { computed, onMounted } from 'vue';
 import { createAvatar } from '@dicebear/core';
 import { adventurer } from '@dicebear/collection';
@@ -14,37 +20,40 @@ const gameStore = useGameStore();
 const avatarStore = useAvatarStore();
 
 // Generate avatar from options
-function generateAvatarFromOptions(options: any): string {
+function generateAvatarFromOptions(options): string {
   try {
-    const avatarConfig: any = {
+    const avatarConfig = {
       size: 48,
       backgroundColor: options.backgroundColor || ['transparent'],
       backgroundType: options.backgroundType || ['solid'],
       eyes: [options.eyes],
       eyebrows: [options.eyebrows],
       mouth: [options.mouth],
-      hairType: [options.hair],
+      hair: [options.hair],
       skinColor: [options.skinColor],
       hairColor: [options.hairColor],
-      
-    }
+      earrings: [options.earrings],
+      earringsProbability: 0,
+      glasses: [options.glasses],
+      glassesProbability: 0,
+    };
 
     // Add optional features
     if (options.earrings && options.earrings !== 'none') {
-      avatarConfig.earrings = [options.earrings]
-      avatarConfig.earringsProbability = 100
+      avatarConfig.earrings = [options.earrings];
+      avatarConfig.earringsProbability = 100;
     }
 
     if (options.glasses && options.glasses !== 'none') {
-      avatarConfig.glasses = [options.glasses]
-      avatarConfig.glassesProbability = 100
+      avatarConfig.glasses = [options.glasses];
+      avatarConfig.glassesProbability = 100;
     }
 
-    const avatar = createAvatar(adventurer, avatarConfig)
-    return avatar.toDataUri()
+    const avatar = createAvatar(adventurer, avatarConfig);
+    return avatar.toDataUri();
   } catch (error) {
-    console.error('Error generating avatar:', error)
-    return ''
+    console.error('Error generating avatar:', error);
+    return '';
   }
 }
 
@@ -63,9 +72,7 @@ onMounted(async () => {
 });
 </script>
 <template>
-  <div
-    class="flex justify-between items-center shadow-lg absolute w-full pe-4 gap-4"
-  >
+  <div class="flex justify-between items-center shadow-lg absolute w-full pe-4 gap-4">
     <div class="flex items-center pl-6">
       <img src="../assets/logo.svg" alt="Lan Exus Logo" class="h-16" />
     </div>
@@ -115,10 +122,7 @@ onMounted(async () => {
       <font-awesome-icon :icon="faArrowsRotate" class="text-2xl" @click="gameStore.reload" />
     </button>
     <div>
-      <button
-        class="btn btn-ghost text-neutral-content"
-        @click="$router.push('/avatar')"
-      >
+      <button class="btn btn-ghost text-neutral-content w-15 h-15" @click="$router.push('/avatar')">
         <div v-if="avatarStore.hasAvatar && currentAvatarUrl" class="avatar">
           <div class="w-12 h-12 rounded-full">
             <img :src="currentAvatarUrl" alt="Your Avatar" class="rounded-full" />
