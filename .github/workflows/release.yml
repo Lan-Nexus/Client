@@ -95,7 +95,8 @@ jobs:
             1. Click the link above to go to the workflow run
             2. Scroll down to the "Artifacts" section
             3. Download \`client-build-pr-${prNumber}\`
-            4. Extract and run the application
+            4. Extract the zip file - it contains the installer
+            5. Run the installer to install the application
             
             _Build ID: ${runId}_`;
             
