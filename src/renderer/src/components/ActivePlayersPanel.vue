@@ -4,17 +4,37 @@ import { useAuthStore } from '../stores/useAuthStore.js';
 import { useServerAddressStore } from '../stores/useServerAddress.js';
 import { websocketService } from '../services/websocketService.js';
 import Logger from '../utils/logger.js';
+import { createAvatar } from '@dicebear/core';
+import { adventurer } from '@dicebear/collection';
 
 const logger = Logger('ActivePlayersPanel');
 
 const isDev = process.env.NODE_ENV === 'development';
+
+interface AvatarOptions {
+  eyes: string;
+  eyebrows: string;
+  mouth: string;
+  glasses?: string;
+  earrings?: string;
+  hair: string;
+  hairColor: string;
+  skinColor: string;
+  backgroundColor?: string[];
+  backgroundType?: string[];
+}
+
+interface UploadedAvatar {
+  type: 'upload';
+  url: string;
+}
 
 interface User {
   id: number;
   name: string;
   clientId: string;
   role: string;
-  avatar: string | null;
+  avatar: AvatarOptions | UploadedAvatar | null;
 }
 
 interface PlayerSession {
@@ -194,17 +214,74 @@ function getTimeSinceStart(startTime: string) {
   return `${diffDays}d`;
 }
 
+// Generate avatar from options using DiceBear
+function generateAvatarFromOptions(options: AvatarOptions): string {
+  try {
+    const avatarConfig: Record<string, string | string[] | number> = {
+      size: 40,
+      backgroundColor: options.backgroundColor || ['transparent'],
+      backgroundType: options.backgroundType || ['solid'],
+      eyes: [options.eyes],
+      eyebrows: [options.eyebrows],
+      mouth: [options.mouth],
+      hairType: [options.hair],
+      skinColor: [options.skinColor],
+      hairColor: [options.hairColor],
+    };
+
+    // Add optional features
+    if (options.earrings && options.earrings !== 'none') {
+      avatarConfig.earrings = [options.earrings];
+      avatarConfig.earringsProbability = 100;
+    }
+
+    if (options.glasses && options.glasses !== 'none') {
+      avatarConfig.glasses = [options.glasses];
+      avatarConfig.glassesProbability = 100;
+    }
+
+    const avatar = createAvatar(adventurer, avatarConfig);
+    return avatar.toDataUri();
+  } catch (error) {
+    logger.warn('Error generating avatar:', error);
+    return '';
+  }
+}
+
 // Get avatar URL from user data
 function getAvatarUrl(user: User | null | undefined) {
   if (!user || !user.avatar) return null;
 
   try {
-    const avatarData = typeof user.avatar === 'string' ? JSON.parse(user.avatar) : user.avatar;
-    if (avatarData && avatarData.type === 'upload' && avatarData.url) {
+    logger.log('Processing avatar for user:', user.name, 'Avatar data:', user.avatar);
+
+    // Handle the avatar data - it comes directly as an object from WebSocket
+    const avatarData = user.avatar;
+    logger.log('Avatar data:', avatarData);
+
+    // Check if it's an uploaded image
+    if (
+      avatarData &&
+      typeof avatarData === 'object' &&
+      'type' in avatarData &&
+      avatarData.type === 'upload' &&
+      'url' in avatarData
+    ) {
+      logger.log('Found uploaded avatar for:', user.name);
       return serverAddressStore.serverAddress + avatarData.url;
     }
+
+    // Check if it's avatar options (generated avatar) - look for avatar option properties
+    if (avatarData && typeof avatarData === 'object' && 'eyes' in avatarData && avatarData.eyes) {
+      logger.log('Found avatar options for:', user.name, 'Generating avatar...');
+      const generatedAvatar = generateAvatarFromOptions(avatarData as AvatarOptions);
+      logger.log('Generated avatar data URI length:', generatedAvatar.length);
+      return generatedAvatar;
+    }
+
+    logger.log('No valid avatar format found for:', user.name);
   } catch (error) {
-    logger.warn('Failed to parse avatar data:', error);
+    logger.warn('Failed to process avatar data for user:', user.name, error);
   }
   return null;
 }
@@ -228,6 +305,27 @@ function getPlayerColor(clientId: string) {
   return colors[Math.abs(hash) % colors.length];
 }
 
+// Test function to verify avatar generation
+function testAvatarGeneration() {
+  const testOptions: AvatarOptions = {
+    eyes: 'variant01',
+    eyebrows: 'variant06',
+    mouth: 'variant02',
+    glasses: 'variant01',
+    earrings: 'variant05',
+    hair: 'long03',
+    hairColor: 'ffffff',
+    skinColor: 'ff6b6b',
+    backgroundColor: ['transparent'],
+    backgroundType: ['solid'],
+  };
+
+  const result = generateAvatarFromOptions(testOptions);
+  logger.log('Test avatar generation result length:', result.length);
+  logger.log('Test avatar starts with data:image:', result.startsWith('data:image/'));
+  return result;
+}
+
 onMounted(async () => {
   try {
     await authStore.fetchClientId();
@@ -237,6 +335,12 @@ onMounted(async () => {
   }
 
   setupWebSocketListeners();
+
+  // Test avatar generation in development
+  if (isDev) {
+    logger.log('Testing avatar generation...');
+    testAvatarGeneration();
+  }
 
   // Request current active sessions when component mounts
   const socket = websocketService.getSocket();
@@ -283,19 +387,6 @@ onUnmounted(() => {
         Other Players
       </h3>
       <div class="badge badge-primary">{{ otherPlayersInGame.length }}</div>
-    </div>
-
-    <!-- Connection Status -->
-    <div class="mb-3 text-xs text-base-content/60">
-      <div class="flex items-center gap-2">
-        <div
-          :class="websocketService.getConnectionStatus() ? 'bg-green-500' : 'bg-red-500'"
-          class="w-2 h-2 rounded-full"
-        ></div>
-        <span>
-          {{ websocketService.getConnectionStatus() ? 'Connected' : 'Disconnected' }}
-        </span>
-      </div>
     </div>
 
     <div v-if="otherPlayersInGame.length === 0" class="text-center py-8 text-base-content/60">
@@ -367,8 +458,8 @@ onUnmounted(() => {
       </TransitionGroup>
     </div>
 
-    <!-- Manual refresh button -->
-    <div class="mt-4 text-center">
+    <!-- Manual refresh button (development only) -->
+    <div v-if="isDev" class="mt-4 text-center">
       <button
         class="btn btn-ghost btn-sm"
         :disabled="!websocketService.getConnectionStatus()"
@@ -388,7 +479,7 @@ onUnmounted(() => {
             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
-        Refresh Players
+        Refresh Players (Debug)
       </button>
     </div>
   </div>

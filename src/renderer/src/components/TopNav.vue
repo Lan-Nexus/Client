@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faCog, faArrowsRotate, faGamepad, faCalendarDays, faUser } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCog,
+  faArrowsRotate,
+  faGamepad,
+  faCalendarDays,
+  faUser,
+} from '@fortawesome/free-solid-svg-icons';
 import { computed, onMounted } from 'vue';
 import { createAvatar } from '@dicebear/core';
 import { adventurer } from '@dicebear/collection';
 import { useAvatarStore } from '../stores/useAvatarStore';
+import { websocketService } from '../services/websocketService.js';
 
 import { useGameStore } from '../stores/useGameStore.js';
 
@@ -26,25 +33,24 @@ function generateAvatarFromOptions(options: any): string {
       hairType: [options.hair],
       skinColor: [options.skinColor],
       hairColor: [options.hairColor],
-      
-    }
+    };
 
     // Add optional features
     if (options.earrings && options.earrings !== 'none') {
-      avatarConfig.earrings = [options.earrings]
-      avatarConfig.earringsProbability = 100
+      avatarConfig.earrings = [options.earrings];
+      avatarConfig.earringsProbability = 100;
     }
 
     if (options.glasses && options.glasses !== 'none') {
-      avatarConfig.glasses = [options.glasses]
-      avatarConfig.glassesProbability = 100
+      avatarConfig.glasses = [options.glasses];
+      avatarConfig.glassesProbability = 100;
     }
 
-    const avatar = createAvatar(adventurer, avatarConfig)
-    return avatar.toDataUri()
+    const avatar = createAvatar(adventurer, avatarConfig);
+    return avatar.toDataUri();
   } catch (error) {
-    console.error('Error generating avatar:', error)
-    return ''
+    console.error('Error generating avatar:', error);
+    return '';
   }
 }
 
@@ -63,9 +69,7 @@ onMounted(async () => {
 });
 </script>
 <template>
-  <div
-    class="flex justify-between items-center shadow-lg absolute w-full pe-4 gap-4"
-  >
+  <div class="flex justify-between items-center shadow-lg absolute w-full pe-4 gap-4">
     <div class="flex items-center pl-6">
       <img src="../assets/logo.svg" alt="Lan Exus Logo" class="h-16" />
     </div>
@@ -111,14 +115,34 @@ onMounted(async () => {
     </button>
     <div class="flex-grow"></div>
 
+    <!-- WebSocket Connection Status -->
+    <div class="flex items-center gap-2 mr-4">
+      <div
+        :class="
+          websocketService.getConnectionStatus()
+            ? 'bg-green-500'
+            : websocketService.isReconnecting()
+              ? 'bg-yellow-500 animate-pulse'
+              : 'bg-red-500'
+        "
+        class="w-2 h-2 rounded-full"
+      ></div>
+      <span class="text-xs text-neutral-content/80">
+        {{
+          websocketService.getConnectionStatus()
+            ? 'Connected'
+            : websocketService.isReconnecting()
+              ? `Reconnecting (${websocketService.getReconnectAttempts()}/10)`
+              : 'Disconnected'
+        }}
+      </span>
+    </div>
+
     <button class="btn btn-ghost text-neutral-content">
       <font-awesome-icon :icon="faArrowsRotate" class="text-2xl" @click="gameStore.reload" />
     </button>
     <div>
-      <button
-        class="btn btn-ghost text-neutral-content"
-        @click="$router.push('/avatar')"
-      >
+      <button class="btn btn-ghost text-neutral-content" @click="$router.push('/avatar')">
         <div v-if="avatarStore.hasAvatar && currentAvatarUrl" class="avatar">
           <div class="w-12 h-12 rounded-full">
             <img :src="currentAvatarUrl" alt="Your Avatar" class="rounded-full" />
