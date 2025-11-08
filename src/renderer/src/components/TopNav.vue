@@ -11,6 +11,7 @@ import { computed, onMounted } from 'vue';
 import { createAvatar } from '@dicebear/core';
 import { adventurer } from '@dicebear/collection';
 import { useAvatarStore } from '../stores/useAvatarStore';
+import { websocketService } from '../services/websocketService.js';
 
 import { useGameStore } from '../stores/useGameStore.js';
 
@@ -32,10 +33,6 @@ function generateAvatarFromOptions(options): string {
       hair: [options.hair],
       skinColor: [options.skinColor],
       hairColor: [options.hairColor],
-      earrings: [options.earrings],
-      earringsProbability: 0,
-      glasses: [options.glasses],
-      glassesProbability: 0,
     };
 
     // Add optional features
@@ -117,6 +114,29 @@ onMounted(async () => {
       <FontAwesomeIcon :icon="faCog" class="text-2xl" />
     </button>
     <div class="flex-grow"></div>
+
+    <!-- WebSocket Connection Status -->
+    <div class="flex items-center gap-2 mr-4">
+      <div
+        :class="
+          websocketService.getConnectionStatus()
+            ? 'bg-green-500'
+            : websocketService.isReconnecting()
+              ? 'bg-yellow-500 animate-pulse'
+              : 'bg-red-500'
+        "
+        class="w-2 h-2 rounded-full"
+      ></div>
+      <span class="text-xs text-neutral-content/80">
+        {{
+          websocketService.getConnectionStatus()
+            ? 'Connected'
+            : websocketService.isReconnecting()
+              ? `Reconnecting (${websocketService.getReconnectAttempts()}/10)`
+              : 'Disconnected'
+        }}
+      </span>
+    </div>
 
     <button class="btn btn-ghost text-neutral-content">
       <font-awesome-icon :icon="faArrowsRotate" class="text-2xl" @click="gameStore.reload" />

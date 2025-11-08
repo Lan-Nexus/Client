@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import ActionBar from '../components/ActionBar.vue';
+import ActivePlayersPanel from '../components/ActivePlayersPanel.vue';
 import { onMounted, onUnmounted, onUpdated, ref, useTemplateRef } from 'vue';
 
 import { useServerAddressStore } from '../stores/useServerAddress.js';
@@ -65,11 +66,7 @@ onUnmounted(() => {
             alt="game"
             class="w-full"
           />
-            <div
-            v-else
-            class="w-full bg-violet-500"
-            :style="{ aspectRatio: '16 / 5.1'}"
-            ></div>
+          <div v-else class="w-full bg-violet-500" :style="{ aspectRatio: '16 / 5.1' }"></div>
         </div>
       </div>
       <div ref="logoElement" class="relative w-full logo">
@@ -91,8 +88,13 @@ onUnmounted(() => {
       <div class="parallax__layer parallax__layer--base">
         <div class="my-[32%] bg-base-200">
           <ActionBar class="bg-base-200" />
-          <div class="mt-4 flex flex-row gap-4 px-5">
-            <div v-html="game?.description"></div>
+          <div class="mt-4 flex flex-col lg:flex-row gap-4 px-5">
+            <div class="flex-1">
+              <div v-html="game?.description"></div>
+            </div>
+            <div class="w-full lg:w-80 xl:w-96">
+              <ActivePlayersPanel :gameId="game.id" />
+            </div>
           </div>
         </div>
       </div>

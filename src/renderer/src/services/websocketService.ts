@@ -21,8 +21,10 @@ export class WebSocketService {
   private isConnected = false;
   private currentSession: GameSessionData | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 10;
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
+  private isReconnecting = false;
+  private shouldReconnect = true;
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -67,19 +69,26 @@ export class WebSocketService {
       this.socket.on('connect', () => {
         logger.log('WebSocket connected successfully');
         this.isConnected = true;
+        this.reconnectAttempts = 0; // Reset counter on successful connection
+        this.isReconnecting = false;
+        this.shouldReconnect = true; // Enable reconnection for future disconnects
         this.joinGameSessionsRoom();
       });
 
       this.socket.on('disconnect', (reason) => {
         logger.log('WebSocket disconnected:', reason);
         this.isConnected = false;
-        this.scheduleReconnect();
+        if (this.shouldReconnect) {
+          this.scheduleReconnect();
+        }
       });
 
       this.socket.on('connect_error', (error) => {
         logger.error('WebSocket connection error:', error);
         this.isConnected = false;
-        this.scheduleReconnect();
+        if (this.shouldReconnect) {
+          this.scheduleReconnect();
+        }
       });
 
       // Listen for game session events from server
@@ -119,8 +128,18 @@ export class WebSocketService {
   }
 
   private scheduleReconnect(): void {
+    if (this.isReconnecting || !this.shouldReconnect) {
+      return;
+    }
+
+    // If we've reached max attempts, wait longer then reset and try again
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      logger.error('Max reconnection attempts reached, giving up');
+      logger.log('Max reconnection attempts reached, waiting 60 seconds before resetting...');
+      this.reconnectTimeoutId = setTimeout(() => {
+        logger.log('Resetting reconnection attempts and trying again');
+        this.reconnectAttempts = 0;
+        this.scheduleReconnect();
+      }, 60000); // Wait 60 seconds then reset attempts
       return;
     }
 
@@ -128,12 +147,20 @@ export class WebSocketService {
       clearTimeout(this.reconnectTimeoutId);
     }
 
+    this.isReconnecting = true;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Exponential backoff, max 30 seconds
     this.reconnectAttempts++;
 
-    logger.log(`Scheduling reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
+    logger.log(
+      `Scheduling reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`
+    );
 
     this.reconnectTimeoutId = setTimeout(async () => {
+      if (!this.shouldReconnect) {
+        this.isReconnecting = false;
+        return;
+      }
+
       logger.log(
         `Attempting to reconnect (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
       );
@@ -142,14 +169,23 @@ export class WebSocketService {
         if (this.isConnected) {
           logger.log('Reconnection successful');
           this.reconnectAttempts = 0; // Reset counter on successful connection
+          this.isReconnecting = false;
+        } else {
+          this.isReconnecting = false;
+          this.scheduleReconnect(); // Schedule next attempt
         }
       } catch (error) {
         logger.error('Reconnection failed:', error);
+        this.isReconnecting = false;
+        this.scheduleReconnect(); // Schedule next attempt
       }
     }, delay);
   }
 
   disconnect(): void {
+    this.shouldReconnect = false; // Stop automatic reconnection
+    this.isReconnecting = false;
+
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
       this.reconnectTimeoutId = null;
@@ -250,6 +286,26 @@ export class WebSocketService {
 
   getConnectionStatus(): boolean {
     return this.isConnected && this.socket?.connected === true;
+  }
+
+  getSocket(): Socket | null {
+    return this.socket;
+  }
+
+  isReconnecting(): boolean {
+    return this.isReconnecting;
+  }
+
+  getReconnectAttempts(): number {
+    return this.reconnectAttempts;
+  }
+
+  enableReconnection(): void {
+    this.shouldReconnect = true;
+  }
+
+  disableReconnection(): void {
+    this.shouldReconnect = false;
   }
 }
 
