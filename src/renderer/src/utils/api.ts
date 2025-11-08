@@ -3,7 +3,7 @@ import axios from 'axios';
 export async function reserveGameKey(serverAddress: string, gameId: number, clientId: string) {
   const response = await axios.post(
     `${serverAddress}/api/games/${gameId}/keys/reserve`,
-    {clientId},
+    { clientId },
     {
       headers: {
         'Content-Type': 'application/json',
@@ -17,7 +17,7 @@ export async function releaseGameKey(serverAddress: string, gameId: number, keyI
   return axios.post(`${serverAddress}/api/games/${gameId}/keys/${keyId}/release`);
 }
 
-export async function loadGames(serverAddress: string,clientId: string) {
+export async function loadGames(serverAddress: string, clientId: string) {
   const response = await axios.get(`${serverAddress}/api/games?clientId=${clientId}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -35,24 +35,30 @@ export async function getIpAddress(serverAddress: string) {
   return response.data.ip;
 }
 
-export async function createUser(serverAddress: string, name: string, clientId: string, avatar?: object) {
+export async function createUser(
+  serverAddress: string,
+  name: string,
+  clientId: string,
+  avatar?: object
+) {
   const payload: { name: string; clientId: string; avatar?: object } = { name, clientId };
   if (avatar) {
     payload.avatar = avatar;
   }
-  const response = await axios.post(
-    `${serverAddress}/api/users`,
-    payload,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const response = await axios.post(`${serverAddress}/api/users`, payload, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
   return response.data;
 }
 
-export async function updateUser(serverAddress: string, clientId: string, name: string, avatar?: object) {
+export async function updateUser(
+  serverAddress: string,
+  clientId: string,
+  name: string,
+  avatar?: object
+) {
   const payload: { name: string; avatar?: object } = { name };
   if (avatar) {
     payload.avatar = avatar;
@@ -72,12 +78,54 @@ export async function updateUser(serverAddress: string, clientId: string, name: 
 
 export function generateFakeName(): string {
   const gamerNames = [
-    'ShadowStrike', 'NoobSlayer', 'PixelWarrior', 'GamerGod', 'ProPlayer', 'EliteSniper', 'RageQuit', 'PwnMaster',
-    'LootGoblin', 'HeadshotKing', 'CriticalHit', 'RespawnHero', 'FragMaster', 'BossRaid', 'ComboBreaker', 'SkillShot',
-    'NightRaven', 'BlazeFury', 'IceCold', 'ThunderBolt', 'DragonSlayer', 'PhoenixRise', 'SteelWolf', 'VoidHunter',
-    'CyberNinja', 'NeonGhost', 'QuantumLeap', 'TurboBoost', 'HyperDrive', 'LaserBeam', 'RocketJump', 'PowerCore',
-    'AceSniper', 'AlphaWolf', 'BetaTester', 'GammaRay', 'DeltaForce', 'EpsilonStrike', 'ZetaHacker', 'OmegaEnd',
-    'DeathBringer', 'LifeSaver', 'SoulReaper', 'MindBender', 'TimeWarp', 'SpaceRanger', 'StarCrusher', 'MoonWalker'
+    'ShadowStrike',
+    'NoobSlayer',
+    'PixelWarrior',
+    'GamerGod',
+    'ProPlayer',
+    'EliteSniper',
+    'RageQuit',
+    'PwnMaster',
+    'LootGoblin',
+    'HeadshotKing',
+    'CriticalHit',
+    'RespawnHero',
+    'FragMaster',
+    'BossRaid',
+    'ComboBreaker',
+    'SkillShot',
+    'NightRaven',
+    'BlazeFury',
+    'IceCold',
+    'ThunderBolt',
+    'DragonSlayer',
+    'PhoenixRise',
+    'SteelWolf',
+    'VoidHunter',
+    'CyberNinja',
+    'NeonGhost',
+    'QuantumLeap',
+    'TurboBoost',
+    'HyperDrive',
+    'LaserBeam',
+    'RocketJump',
+    'PowerCore',
+    'AceSniper',
+    'AlphaWolf',
+    'BetaTester',
+    'GammaRay',
+    'DeltaForce',
+    'EpsilonStrike',
+    'ZetaHacker',
+    'OmegaEnd',
+    'DeathBringer',
+    'LifeSaver',
+    'SoulReaper',
+    'MindBender',
+    'TimeWarp',
+    'SpaceRanger',
+    'StarCrusher',
+    'MoonWalker',
   ];
 
   const randomIndex = Math.floor(Math.random() * gamerNames.length);

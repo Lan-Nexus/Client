@@ -251,6 +251,10 @@ export class WebSocketService {
   getConnectionStatus(): boolean {
     return this.isConnected && this.socket?.connected === true;
   }
+
+  getSocket(): Socket | null {
+    return this.socket;
+  }
 }
 
 // Export singleton instance
