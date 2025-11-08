@@ -3,6 +3,7 @@ interface Api {
   download(url: string, archiveFile: string): Promise<void>;
   unzip(archiveFile: string, safeName: string): Promise<void>;
   run(safeName: string, command: string, env?: Record<string, string>): Promise<void>;
+  runDirect(absolutePath: string, params?: string[]): Promise<void>;
   clearTemp(): Promise<void>;
   getServerIP(stopRequesting?: boolean): Promise<string>;
   getMachineId(): Promise<string>;
@@ -15,7 +16,7 @@ const api = new Proxy(
   {
     get(_target, prop: string) {
       return async (...args: any[]) => await window.api.function(prop, ...args);
-    }
+    },
   }
 ) as Api;
 

@@ -113,6 +113,51 @@ export const useGameStore = defineStore('game', {
       }, 30000);
     },
 
+    async checkForAlreadyRunningGames() {
+      logger.log('Checking for already running games...');
+
+      try {
+        const programs = await functions.getRunningPrograms();
+
+        for (const game of this.games) {
+          // Only check archive and shortcut games
+          if (game.type !== 'archive' && game.type !== 'shortcut') {
+            continue;
+          }
+
+          // Extract executable name for comparison
+          let executableToCheck = game.executable;
+          if (game.type === 'shortcut' && executableToCheck.includes('\\')) {
+            const parts = executableToCheck.split('\\');
+            executableToCheck = parts[parts.length - 1];
+          }
+
+          const isRunning = programs.includes(executableToCheck);
+
+          if (isRunning) {
+            logger.log(`Found already running game: ${game.name} (${executableToCheck})`);
+
+            // Start websocket session for this game
+            const sessionStarted = await websocketService.startGameSession(game.id);
+            if (sessionStarted) {
+              logger.log(`Started session for already-running game: ${game.name}`);
+              // Set it as the running game if we don't have one yet
+              if (!this.gameRunning) {
+                this.gameRunning = game;
+                this.gameHasStarted = true;
+              }
+            } else {
+              logger.warn(`Failed to start session for already-running game: ${game.name}`);
+            }
+          }
+        }
+
+        logger.log('Finished checking for already running games');
+      } catch (error) {
+        logger.error('Failed to check for already running games:', error);
+      }
+    },
+
     autoRefreshGames() {
       const refreshRate = 600 * 1000;
       logger.log(`Auto-refreshing games every ${refreshRate / 1000} seconds`);
@@ -127,43 +172,113 @@ export const useGameStore = defineStore('game', {
     },
 
     async watchIfGameStopped() {
-      if (!this.gameRunning || this.gameRunning.type !== 'archive') return;
-
       try {
         const programs = await functions.getRunningPrograms();
-        const isRunning = programs.includes(this.gameRunning.executable);
 
-        if (!this.gameHasStarted) {
-          // Wait for the game to actually start before monitoring for stop
+        // If we have a game running, monitor it
+        if (this.gameRunning) {
+          logger.log(
+            `watchIfGameStopped - gameRunning: ${this.gameRunning.name}, type: ${this.gameRunning.type}`
+          );
+
+          // Only monitor archive and shortcut games
+          if (this.gameRunning.type !== 'archive' && this.gameRunning.type !== 'shortcut') {
+            logger.log(`Skipping monitoring for game type: ${this.gameRunning.type}`);
+            return;
+          }
+
+          // For shortcut games, extract just the filename from the full path
+          let executableToCheck = this.gameRunning.executable;
+          if (this.gameRunning.type === 'shortcut' && executableToCheck.includes('\\')) {
+            // Extract filename from full path (e.g., C:\Program Files\Game\game.exe -> game.exe)
+            const parts = executableToCheck.split('\\');
+            executableToCheck = parts[parts.length - 1];
+            logger.log(`Monitoring shortcut game process: ${executableToCheck}`);
+          }
+
+          const isRunning = programs.includes(executableToCheck);
+
+          // Debug logging
+          if (this.gameRunning.type === 'shortcut') {
+            logger.log(
+              `Shortcut game check - Looking for: ${executableToCheck}, Found: ${isRunning}, gameHasStarted: ${this.gameHasStarted}`
+            );
+          }
+
+          if (!this.gameHasStarted) {
+            // Wait for the game to actually start before monitoring for stop
+            if (isRunning) {
+              this.gameHasStarted = true;
+              logger.log('Game has started, now monitoring for game stop');
+            }
+            return;
+          }
+
           if (isRunning) {
-            this.gameHasStarted = true;
-            logger.log('Game has started, now monitoring for game stop');
+            // Game is still running, nothing to do
+            return;
           }
-          return;
-        }
 
-        if (isRunning) {
-          // Game is still running, nothing to do
-          return;
-        }
+          // Game has stopped after starting
+          logger.log('Game stopped detected, ending session');
+          logger.log(`WebSocket session active: ${websocketService.isSessionActive()}`);
 
-        // Game has stopped after starting
-        logger.log('Game stopped detected, releasing key immediately');
+          // End the websocket session before releasing the key
+          if (websocketService.isSessionActive()) {
+            logger.log('Attempting to end websocket session...');
+            const sessionEnded = await websocketService.endGameSession();
+            if (!sessionEnded) {
+              logger.warn('Failed to properly end websocket session');
+            } else {
+              logger.log('WebSocket session ended successfully');
+            }
+          } else {
+            logger.warn('No active websocket session to end');
+          }
 
-        // End the websocket session before releasing the key
-        if (websocketService.isSessionActive()) {
-          const sessionEnded = await websocketService.endGameSession();
-          if (!sessionEnded) {
-            logger.warn('Failed to properly end websocket session');
+          // Release game key if needed (only for archive games)
+          if (this.gameRunning.needsKey && this.gameRunning.gamekey?.id != null) {
+            await this.releaseGameKey(this.gameRunning.id);
+          }
+
+          this.gameRunning = void 0;
+          this.gameHasStarted = false;
+          logger.log('Game session ended');
+        } else {
+          // No game running - check all shortcut games for external launches
+          for (const game of this.games) {
+            if (game.type !== 'shortcut') {
+              continue;
+            }
+
+            // Extract executable name for comparison
+            let executableToCheck = game.executable;
+            if (executableToCheck.includes('\\')) {
+              const parts = executableToCheck.split('\\');
+              executableToCheck = parts[parts.length - 1];
+            }
+
+            const isRunning = programs.includes(executableToCheck);
+
+            if (isRunning) {
+              logger.log(
+                `Detected external launch of shortcut game: ${game.name} (${executableToCheck})`
+              );
+
+              // Start websocket session for this game
+              const sessionStarted = await websocketService.startGameSession(game.id);
+              if (sessionStarted) {
+                logger.log(`Started session for externally-launched game: ${game.name}`);
+                this.gameRunning = game;
+                this.gameHasStarted = true;
+                // Only track one game at a time
+                break;
+              } else {
+                logger.warn(`Failed to start session for externally-launched game: ${game.name}`);
+              }
+            }
           }
         }
-
-        if (this.gameRunning.needsKey && this.gameRunning.gamekey?.id != null) {
-          await this.releaseGameKey(this.gameRunning.id);
-        }
-        this.gameRunning = void 0;
-        this.gameHasStarted = false;
-        logger.log('Game session ended and key released');
       } catch (error) {
         logger.error('Failed to check if game has stopped:', error);
       }
@@ -316,6 +431,9 @@ export const useGameStore = defineStore('game', {
           authStore.getClientId
         );
         this.games = await this._addInstallStatusToGames(gamesData);
+
+        // Check for already running games after loading
+        await this.checkForAlreadyRunningGames();
       } catch (error) {
         logger.error('Failed to load games:', error);
         alerts.showError({ title: 'Load Failed', description: 'Failed to load games.' });
@@ -343,6 +461,10 @@ export const useGameStore = defineStore('game', {
         // This could be enhanced to check if Steam is actually installed
         isInstalled = true;
         logger.log(`Steam game ${game.name} assumed ready: ${isInstalled}`);
+      } else {
+        // Default: Other game types (shortcut, etc.) are always ready to play
+        isInstalled = true;
+        logger.log(`${game.type} game ${game.name} is ready to launch`);
       }
       return { ...game, isInstalled };
     },
@@ -365,10 +487,15 @@ export const useGameStore = defineStore('game', {
       const selectedGame = this.selectedGame;
       if (!selectedGame) return;
 
+      logger.log(`play() called for: ${selectedGame.name}, type: ${selectedGame.type}`);
+
+      // Steam games have special handling (protocol launch)
       if (selectedGame.type === 'steam') {
         await this.playSteam();
         return;
       }
+
+      // Archive games need installation check and key reservation
       if (selectedGame.type === 'archive') {
         const game = this._findSelectedGame();
         if (game && game.needsKey) {
@@ -384,6 +511,10 @@ export const useGameStore = defineStore('game', {
         await this.playArchive();
         return;
       }
+
+      // Default behavior for all other game types (shortcut, and any future types)
+      // This will run the play script with GAME_EXECUTABLE replacement
+      await this.playDefault();
     },
 
     async playSteam() {
@@ -417,6 +548,68 @@ export const useGameStore = defineStore('game', {
         GAME_EXECUTABLE: game.executable || '',
       });
       logger.log(`Playing game: ${game.name}`);
+    },
+
+    async playDefault() {
+      const game = this._findSelectedGame();
+      if (!game) {
+        logger.error('No game found to launch');
+        return;
+      }
+
+      logger.log(`Preparing to launch game: ${game.name} (type: ${game.type})`);
+      logger.log(`Game executable: ${game.executable}`);
+      logger.log(`Play script: ${game.play}`);
+
+      this.gameRunning = game;
+      this.gameHasStarted = false;
+
+      // Start websocket session
+      logger.log(`Starting websocket session for game ID: ${game.id}`);
+      const sessionStarted = await websocketService.startGameSession(game.id);
+      logger.log(
+        `WebSocket session start result: ${sessionStarted}, isActive: ${websocketService.isSessionActive()}`
+      );
+      if (!sessionStarted) {
+        logger.warn('Failed to start websocket session, but continuing with game launch');
+      }
+
+      // For shortcut games, use runDirect API directly instead of the run() context
+      if (game.type === 'shortcut') {
+        try {
+          logger.log(`Launching shortcut directly: ${game.executable}`);
+          await functions.runDirect(game.executable);
+          logger.log(`Launched shortcut game: ${game.name}`);
+        } catch (error) {
+          logger.error(`Failed to launch shortcut: ${error}`);
+          throw error;
+        }
+        return;
+      }
+
+      // For other game types, use the normal run() with game directory context
+      const safeName = game.gameID.replaceAll(' ', '-');
+
+      // Check if play script exists
+      if (!game.play || game.play.trim() === '') {
+        logger.error(`No play script defined for game: ${game.name}`);
+        logger.warn('Attempting to run with default script: await run(GAME_EXECUTABLE);');
+        await functions.run(safeName, 'await run(GAME_EXECUTABLE);', {
+          GAME_KEY: game.gamekey?.key ?? '',
+          GAME_ID: String(game.gameID),
+          GAME_NAME: game.name,
+          GAME_EXECUTABLE: game.executable || '',
+        });
+      } else {
+        // Run the play script with variable replacements
+        await functions.run(safeName, game.play, {
+          GAME_KEY: game.gamekey?.key ?? '',
+          GAME_ID: String(game.gameID),
+          GAME_NAME: game.name,
+          GAME_EXECUTABLE: game.executable || '',
+        });
+      }
+      logger.log(`Launched game: ${game.name}`);
     },
   },
 });
