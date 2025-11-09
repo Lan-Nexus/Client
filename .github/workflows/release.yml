@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - "v*.*.*" # Triggers on version tags like v1.0.0, v1.2.3, etc.
+      - 'v*.*.*' # Triggers on version tags like v1.0.0, v1.2.3, etc.
   pull_request:
     branches:
       - main
@@ -28,9 +28,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Extract version from tag
         id: get_version
@@ -40,6 +40,11 @@ jobs:
             $version = $tagName -replace '^v', ''
             echo "version=$version" >> $env:GITHUB_OUTPUT
             echo "Extracted version: $version"
+          } elseif ("${{ github.event_name }}" -eq "pull_request") {
+            $prNumber = "${{ github.event.number }}"
+            $version = "0.0.0-pr$prNumber"
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+            echo "Using PR version: $version"
           } else {
             $version = "0.0.0-dev"
             echo "version=$version" >> $env:GITHUB_OUTPUT
@@ -66,7 +71,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: client-build-pr-${{ github.event.number }}
+          name: client-build-${{ steps.get_version.outputs.version }}
           path: |
             client-build.zip
             dist/*.exe
@@ -83,23 +88,44 @@ jobs:
             const runId = context.runId;
             const prNumber = context.issue.number;
             const repo = context.repo;
-            const artifactUrl = `https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId}`;
-            
-            const comment = `## 🔨 Build Artifacts Available
-            
-            The build for this PR has completed successfully! 
-            
-            **Download artifacts:** [client-build-pr-${prNumber}](${artifactUrl})
-            
-            To test this build:
+            const version = '${{ steps.get_version.outputs.version }}';
+
+            // Get artifacts for this workflow run
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: repo.owner,
+              repo: repo.repo,
+              run_id: runId
+            });
+
+            // Find the artifact for this PR
+            const artifact = artifacts.data.artifacts.find(a => a.name === `client-build-${version}`);
+
+            let downloadLink = `https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId}`;
+            let instructions = `To test this build:
             1. Click the link above to go to the workflow run
             2. Scroll down to the "Artifacts" section
-            3. Download \`client-build-pr-${prNumber}\`
+            3. Download \`client-build-${version}\`
             4. Extract the zip file - it contains the installer
-            5. Run the installer to install the application
-            
+            5. Run the installer to install the application`;
+
+            if (artifact) {
+              downloadLink = `https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId}/artifacts/${artifact.id}`;
+              instructions = `To test this build:
+            1. Click the link above to download the build artifact
+            2. Extract the zip file - it contains the installer
+            3. Run the installer to install the application`;
+            }
+
+            const comment = `## 🔨 Build Artifacts Available
+
+            The build for this PR has completed successfully!
+
+            **Download build:** [client-build-${version}](${downloadLink})
+
+            ${instructions}
+
             _Build ID: ${runId}_`;
-            
+
             github.rest.issues.createComment({
               owner: repo.owner,
               repo: repo.repo,
