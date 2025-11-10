@@ -3,9 +3,9 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import pkg from 'electron-updater';
 const { autoUpdater } = pkg;
-import Logger from './logger.js'
+import Logger from './logger.js';
 import { screen } from 'electron';
-import './function.js'
+import './function.js';
 
 const logger = Logger('main');
 
@@ -32,7 +32,7 @@ function setupAutoUpdater() {
     });
 
     // Send to all windows
-    BrowserWindow.getAllWindows().forEach(window => {
+    BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('update-available', info);
     });
   });
@@ -45,7 +45,7 @@ function setupAutoUpdater() {
       progressActive(false);
     });
 
-    BrowserWindow.getAllWindows().forEach(window => {
+    BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('update-not-available', info);
     });
   });
@@ -58,15 +58,15 @@ function setupAutoUpdater() {
       progressActive(false);
     });
 
-    BrowserWindow.getAllWindows().forEach(window => {
+    BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('updater-error', err);
     });
   });
 
   autoUpdater.on('download-progress', (progressObj) => {
-    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    let log_message = 'Download speed: ' + progressObj.bytesPerSecond;
     log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    log_message = log_message + ' (' + progressObj.transferred + '/' + progressObj.total + ')';
     logger.log(log_message);
 
     // Use the normal progress system
@@ -74,7 +74,7 @@ function setupAutoUpdater() {
       progressCallback(progressObj.percent, 'Downloading Update');
     });
 
-    BrowserWindow.getAllWindows().forEach(window => {
+    BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('download-progress', progressObj);
     });
   });
@@ -90,7 +90,7 @@ function setupAutoUpdater() {
       }, 1000);
     });
 
-    BrowserWindow.getAllWindows().forEach(window => {
+    BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('update-downloaded', info);
     });
     // Auto-install after 5 seconds
@@ -116,6 +116,17 @@ async function createWindow() {
   const screenWidth = primaryDisplay.workAreaSize.width;
   const screenHeight = primaryDisplay.workAreaSize.height;
 
+  // Create window title with PR info if applicable
+  const version = app.getVersion();
+  let windowTitle = 'Lan Nexus';
+
+  if (version.includes('-pr')) {
+    const prMatch = version.match(/-pr(\d+)/);
+    if (prMatch) {
+      windowTitle = `Lan Nexus - PR ${prMatch[1]}`;
+    }
+  }
+
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -123,7 +134,7 @@ async function createWindow() {
     minHeight: 670,
     maxWidth: screenWidth,
     maxHeight: screenHeight,
-    title: 'demo',
+    title: windowTitle,
     show: false,
     autoHideMenuBar: true,
     icon: icon,
@@ -135,7 +146,6 @@ async function createWindow() {
 
   // Set mainWindow for progress utils
   import('../functions/utils.js').then(({ setMainWindow }) => setMainWindow(mainWindow));
-
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
@@ -162,11 +172,8 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
 
-
   // Initialize auto-updater
   setupAutoUpdater();
-
-
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -218,7 +225,6 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
 
 // ipcMain.on('function', async (event, arg) => {
 //   const id = arg.id
