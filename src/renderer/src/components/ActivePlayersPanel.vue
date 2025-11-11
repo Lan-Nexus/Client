@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useServerAddressStore } from '../stores/useServerAddress.js';
+import { useGameStore } from '../stores/useGameStore.js';
 import { websocketService } from '../services/websocketService.js';
 import Logger from '../utils/logger.js';
 import { createAvatar } from '@dicebear/core';
@@ -10,6 +11,8 @@ import { adventurer } from '@dicebear/collection';
 const logger = Logger('ActivePlayersPanel');
 
 const isDev = process.env.NODE_ENV === 'development';
+
+const gameStore = useGameStore();
 
 interface AvatarOptions {
   eyes: string;
@@ -462,7 +465,7 @@ onUnmounted(() => {
     <div v-if="isDev" class="mt-4 text-center">
       <button
         class="btn btn-ghost btn-sm"
-        :disabled="!websocketService.getConnectionStatus()"
+        :disabled="!gameStore.websocketConnected"
         @click="requestActiveSessions"
       >
         <svg

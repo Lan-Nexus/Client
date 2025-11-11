@@ -20,6 +20,8 @@ export const useGameStore = defineStore('game', {
     loading: false,
     gameHasStarted: false,
     websocketConnected: false,
+    websocketReconnecting: false,
+    websocketReconnectAttempts: 0,
   }),
   getters: {
     selectedGame: (state) => {
@@ -41,12 +43,23 @@ export const useGameStore = defineStore('game', {
 
     async initializeWebSocket() {
       try {
+        // Listen to websocket status changes
+        websocketService.onStatusChange(() => {
+          this.updateWebSocketStatus();
+        });
+
         await websocketService.connect();
-        this.websocketConnected = websocketService.getConnectionStatus();
+        this.updateWebSocketStatus();
         logger.log('WebSocket initialized:', this.websocketConnected);
       } catch (error) {
         logger.error('Failed to initialize WebSocket:', error);
       }
+    },
+
+    updateWebSocketStatus() {
+      this.websocketConnected = websocketService.getConnectionStatus();
+      this.websocketReconnecting = websocketService.isReconnecting();
+      this.websocketReconnectAttempts = websocketService.getReconnectAttempts();
     },
 
     async checkWebSocketConnection() {

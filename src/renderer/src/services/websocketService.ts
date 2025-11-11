@@ -25,6 +25,7 @@ export class WebSocketService {
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
   private _isReconnecting = false;
   private shouldReconnect = true;
+  private statusChangeCallbacks: Array<() => void> = [];
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -72,12 +73,14 @@ export class WebSocketService {
         this.reconnectAttempts = 0; // Reset counter on successful connection
         this._isReconnecting = false;
         this.shouldReconnect = true; // Enable reconnection for future disconnects
+        this.notifyStatusChange();
         this.joinGameSessionsRoom();
       });
 
       this.socket.on('disconnect', (reason) => {
         logger.log('WebSocket disconnected:', reason);
         this.isConnected = false;
+        this.notifyStatusChange();
         if (this.shouldReconnect) {
           this.scheduleReconnect();
         }
@@ -86,6 +89,7 @@ export class WebSocketService {
       this.socket.on('connect_error', (error) => {
         logger.error('WebSocket connection error:', error);
         this.isConnected = false;
+        this.notifyStatusChange();
         if (this.shouldReconnect) {
           this.scheduleReconnect();
         }
@@ -148,6 +152,7 @@ export class WebSocketService {
     }
 
     this._isReconnecting = true;
+    this.notifyStatusChange();
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Exponential backoff, max 30 seconds
     this.reconnectAttempts++;
 
@@ -158,6 +163,7 @@ export class WebSocketService {
     this.reconnectTimeoutId = setTimeout(async () => {
       if (!this.shouldReconnect) {
         this._isReconnecting = false;
+        this.notifyStatusChange();
         return;
       }
 
@@ -170,13 +176,16 @@ export class WebSocketService {
           logger.log('Reconnection successful');
           this.reconnectAttempts = 0; // Reset counter on successful connection
           this._isReconnecting = false;
+          this.notifyStatusChange();
         } else {
           this._isReconnecting = false;
+          this.notifyStatusChange();
           this.scheduleReconnect(); // Schedule next attempt
         }
       } catch (error) {
         logger.error('Reconnection failed:', error);
         this._isReconnecting = false;
+        this.notifyStatusChange();
         this.scheduleReconnect(); // Schedule next attempt
       }
     }, delay);
@@ -198,6 +207,7 @@ export class WebSocketService {
       this.socket = null;
       this.isConnected = false;
       this.currentSession = null;
+      this.notifyStatusChange();
       logger.log('WebSocket disconnected');
     }
   }
@@ -306,6 +316,24 @@ export class WebSocketService {
 
   disableReconnection(): void {
     this.shouldReconnect = false;
+  }
+
+  onStatusChange(callback: () => void): () => void {
+    this.statusChangeCallbacks.push(callback);
+    // Return unsubscribe function
+    return () => {
+      this.statusChangeCallbacks = this.statusChangeCallbacks.filter((cb) => cb !== callback);
+    };
+  }
+
+  private notifyStatusChange(): void {
+    this.statusChangeCallbacks.forEach((callback) => {
+      try {
+        callback();
+      } catch (error) {
+        logger.error('Error in status change callback:', error);
+      }
+    });
   }
 }
 
