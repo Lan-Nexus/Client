@@ -19,8 +19,25 @@ const isloading = computed(() => {
 
 const isIngame = computed(() => {
   const game = gameStore.selectedGame;
-  if (!game || !game.executable) return false;
-  return runningStore.isRunning(game.executable);
+  if (!game) return false;
+
+  // Collect all executables to check
+  const executablesToCheck: string[] = [];
+
+  // Add executables from the executables array if present
+  if (game.executables && game.executables.length > 0) {
+    executablesToCheck.push(...game.executables);
+  }
+
+  // Also add the main executable field for backward compatibility
+  if (game.executable) {
+    executablesToCheck.push(game.executable);
+  }
+
+  if (executablesToCheck.length === 0) return false;
+
+  // Check if any of the executables are running
+  return runningStore.isAnyRunning(executablesToCheck);
 });
 
 onMounted(() => {

@@ -11,8 +11,26 @@ const isSelectedGame = (gameId: number): boolean => {
   return gameStore.selectedGame?.id === gameId;
 };
 
-const isGameRunning = (executable: string): boolean => {
-  return runningStore.isRunning(executable);
+const isGameRunning = (game: any): boolean => {
+  if (!game) return false;
+
+  // Collect all executables to check
+  const executablesToCheck: string[] = [];
+
+  // Add executables from the executables array if present
+  if (game.executables && game.executables.length > 0) {
+    executablesToCheck.push(...game.executables);
+  }
+
+  // Also add the main executable field for backward compatibility
+  if (game.executable) {
+    executablesToCheck.push(game.executable);
+  }
+
+  if (executablesToCheck.length === 0) return false;
+
+  // Check if any of the executables are running
+  return runningStore.isAnyRunning(executablesToCheck);
 };
 
 const isGameReady = (game: any): boolean => {
@@ -76,7 +94,7 @@ const isGameReady = (game: any): boolean => {
           >
             {{ game.type }}
           </span>
-          <span v-if="isGameRunning(game.executable)" class="badge badge-accent"> In Game </span>
+          <span v-if="isGameRunning(game)" class="badge badge-accent"> In Game </span>
         </div>
       </div>
     </div>

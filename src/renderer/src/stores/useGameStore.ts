@@ -41,6 +41,51 @@ export const useGameStore = defineStore('game', {
       return this.games.find((game) => game.id === this.selectedGameId);
     },
 
+    /**
+     * Get all executable names that should be monitored for a game.
+     * Returns an array of executable names (just filenames, not full paths).
+     */
+    _getExecutablesToMonitor(game: gameState): string[] {
+      const executables: string[] = [];
+
+      // Add executables from the executables array if present
+      if (game.executables && game.executables.length > 0) {
+        for (const exe of game.executables) {
+          // Extract filename from path if needed (handle both / and \ path separators)
+          let filename = exe;
+          if (exe.includes('\\') || exe.includes('/')) {
+            const parts = exe.split(/[\\/]/);
+            filename = parts[parts.length - 1];
+          }
+          executables.push(filename);
+        }
+      }
+
+      // Also add the main executable field for backward compatibility
+      if (game.executable) {
+        let filename = game.executable;
+        if (game.executable.includes('\\') || game.executable.includes('/')) {
+          const parts = game.executable.split(/[\\/]/);
+          filename = parts[parts.length - 1];
+        }
+        // Only add if not already in the list
+        if (!executables.includes(filename)) {
+          executables.push(filename);
+        }
+      }
+
+      logger.log(`Executables to monitor for ${game.name}: [${executables.join(', ')}]`);
+      return executables;
+    },
+
+    /**
+     * Check if any of the game's processes are running.
+     */
+    _isGameRunning(game: gameState, runningPrograms: string[]): boolean {
+      const executablesToCheck = this._getExecutablesToMonitor(game);
+      return executablesToCheck.some((exe) => runningPrograms.includes(exe));
+    },
+
     async initializeWebSocket() {
       try {
         // Listen to websocket status changes
@@ -138,17 +183,13 @@ export const useGameStore = defineStore('game', {
             continue;
           }
 
-          // Extract executable name for comparison
-          let executableToCheck = game.executable;
-          if (game.type === 'shortcut' && executableToCheck.includes('\\')) {
-            const parts = executableToCheck.split('\\');
-            executableToCheck = parts[parts.length - 1];
-          }
-
-          const isRunning = programs.includes(executableToCheck);
+          const isRunning = this._isGameRunning(game, programs);
 
           if (isRunning) {
-            logger.log(`Found already running game: ${game.name} (${executableToCheck})`);
+            const executables = this._getExecutablesToMonitor(game);
+            logger.log(
+              `Found already running game: ${game.name} (monitoring: ${executables.join(', ')})`
+            );
 
             // Start websocket session for this game
             const sessionStarted = await websocketService.startGameSession(game.id);
@@ -200,23 +241,13 @@ export const useGameStore = defineStore('game', {
             return;
           }
 
-          // For shortcut games, extract just the filename from the full path
-          let executableToCheck = this.gameRunning.executable;
-          if (this.gameRunning.type === 'shortcut' && executableToCheck.includes('\\')) {
-            // Extract filename from full path (e.g., C:\Program Files\Game\game.exe -> game.exe)
-            const parts = executableToCheck.split('\\');
-            executableToCheck = parts[parts.length - 1];
-            logger.log(`Monitoring shortcut game process: ${executableToCheck}`);
-          }
-
-          const isRunning = programs.includes(executableToCheck);
+          const executablesToCheck = this._getExecutablesToMonitor(this.gameRunning);
+          const isRunning = this._isGameRunning(this.gameRunning, programs);
 
           // Debug logging
-          if (this.gameRunning.type === 'shortcut') {
-            logger.log(
-              `Shortcut game check - Looking for: ${executableToCheck}, Found: ${isRunning}, gameHasStarted: ${this.gameHasStarted}`
-            );
-          }
+          logger.log(
+            `Monitoring game processes: [${executablesToCheck.join(', ')}], Found: ${isRunning}, gameHasStarted: ${this.gameHasStarted}`
+          );
 
           if (!this.gameHasStarted) {
             // Wait for the game to actually start before monitoring for stop
@@ -264,18 +295,12 @@ export const useGameStore = defineStore('game', {
               continue;
             }
 
-            // Extract executable name for comparison
-            let executableToCheck = game.executable;
-            if (executableToCheck.includes('\\')) {
-              const parts = executableToCheck.split('\\');
-              executableToCheck = parts[parts.length - 1];
-            }
-
-            const isRunning = programs.includes(executableToCheck);
+            const isRunning = this._isGameRunning(game, programs);
 
             if (isRunning) {
+              const executables = this._getExecutablesToMonitor(game);
               logger.log(
-                `Detected external launch of shortcut game: ${game.name} (${executableToCheck})`
+                `Detected external launch of shortcut game: ${game.name} (monitoring: ${executables.join(', ')})`
               );
 
               // Start websocket session for this game

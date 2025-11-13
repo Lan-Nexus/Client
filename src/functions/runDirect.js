@@ -11,11 +11,14 @@ import { spawn } from 'child_process';
  * @throws {Error} If the executable fails to start.
  */
 export default async function (absolutePath, params = []) {
-  console.log(`Running direct command: ${absolutePath} with params:`, params);
+  // Expand environment variables in the path
+  const expandedPath = absolutePath.replace(/%([^%]+)%/g, (_, key) => process.env[key] || '');
+
+  console.log(`Running direct command: ${expandedPath} with params:`, params);
 
   return new Promise((resolve, reject) => {
     // Use spawn for better handling of paths with spaces
-    const child = spawn(absolutePath, params, {
+    const child = spawn(expandedPath, params, {
       detached: true,
       stdio: 'ignore',
       shell: false,
