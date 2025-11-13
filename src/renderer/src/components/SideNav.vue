@@ -21,12 +21,12 @@ const isGameReady = (game: any): boolean => {
   if (game.type === 'steam') {
     return true; // Could be enhanced to check if Steam is installed
   }
-  
+
   // For archive games, check if they're installed
   if (game.type === 'archive') {
     return game.isInstalled === true;
   }
-  
+
   // For other types, assume ready by default
   return true;
 };
@@ -50,7 +50,7 @@ const isGameReady = (game: any): boolean => {
         alt="game image"
         class="h-12 w-12"
         :class="{
-          'grayscale': !isGameReady(game),
+          grayscale: !isGameReady(game),
         }"
       />
       <div v-else class="h-12 w-12"></div>
@@ -66,15 +66,17 @@ const isGameReady = (game: any): boolean => {
           {{ game.name }}
         </h2>
         <div class="flex gap-2 mt-1">
-          <span class="badge" :class="game.type === 'archive' ? 'badge-secondary' : 'badge-primary'">
+          <span
+            class="badge"
+            :class="{
+              'badge-secondary': game.type === 'archive',
+              'badge-success': game.type === 'shortcut',
+              'badge-primary': game.type !== 'archive' && game.type !== 'shortcut',
+            }"
+          >
             {{ game.type }}
           </span>
-          <span
-            v-if="isGameRunning(game.executable)"
-            class="badge badge-accent"
-          >
-            In Game
-          </span>
+          <span v-if="isGameRunning(game.executable)" class="badge badge-accent"> In Game </span>
         </div>
       </div>
     </div>
