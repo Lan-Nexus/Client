@@ -14,10 +14,13 @@ export default function () {
     ],
     action(absolutePath, params) {
       return new Promise((resolve, reject) => {
-        console.log(`Running direct command: ${absolutePath} with params:`, params);
+        // Expand environment variables in the path
+        const expandedPath = absolutePath.replace(/%([^%]+)%/g, (_, key) => process.env[key] || '');
+
+        console.log(`Running direct command1: ${expandedPath} with params:`, params);
 
         // Use spawn instead of execFile for better handling of paths with spaces
-        const child = spawn(absolutePath, params || [], {
+        const child = spawn(expandedPath, params || [], {
           detached: true,
           stdio: 'ignore',
           shell: false,

@@ -23,4 +23,5 @@ export type gameState = {
   isInstalled?: boolean; // Added property
   needsKey: boolean;
   executable: string;
+  executables?: string[]; // Optional array for multiple process names to detect
 };
