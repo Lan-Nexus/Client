@@ -90,6 +90,10 @@ onUnmounted(() => {
           <ActionBar class="bg-base-200" />
           <div class="mt-4 flex flex-col lg:flex-row gap-4 px-5">
             <div class="flex-1">
+              <div v-if="game?.gamekey" class="mb-4 p-4 bg-base-300 rounded-lg">
+                <div class="text-sm font-semibold text-base-content/70 mb-1">CD Key</div>
+                <div class="font-mono text-lg select-all">{{ game.gamekey.key ?? '' }}</div>
+              </div>
               <div v-html="game?.description"></div>
             </div>
             <div class="w-full lg:w-80 xl:w-96">
