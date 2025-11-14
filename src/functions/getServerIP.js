@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import dgram from 'dgram';
+import os from 'os';
 import Logger from '../main/logger.js';
 import { clear } from 'console';
 
@@ -10,6 +11,32 @@ const knownPort = 50000;
 
 let socket = null;
 let interval = null;
+
+// Get all broadcast addresses from network interfaces
+function getBroadcastAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = ['255.255.255.255']; // Always include general broadcast
+
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Only IPv4 and not internal/loopback
+      if (iface.family === 'IPv4' && !iface.internal) {
+        // Calculate broadcast address
+        if (iface.netmask && iface.address) {
+          const ip = iface.address.split('.').map(Number);
+          const mask = iface.netmask.split('.').map(Number);
+          const broadcast = ip.map((byte, i) => byte | (~mask[i] & 255)).join('.');
+          if (!addresses.includes(broadcast)) {
+            addresses.push(broadcast);
+          }
+        }
+      }
+    }
+  }
+
+  logger.log('Broadcast addresses:', addresses);
+  return addresses;
+}
 
 export default async function getServerIP(stopSocket) {
   if (stopSocket) {
@@ -30,7 +57,14 @@ export default async function getServerIP(stopSocket) {
 function sendMessage() {
   return new Promise((resolve, reject) => {
     if (socket) {
-      socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+      const broadcastAddresses = getBroadcastAddresses();
+      broadcastAddresses.forEach((address) => {
+        try {
+          socket.send(message, 0, message.length, knownPort, address);
+        } catch (error) {
+          logger.error(`Error sending to ${address}:`, error);
+        }
+      });
       return;
     }
     logger.log('Searching for server IP...');
@@ -39,22 +73,28 @@ function sendMessage() {
     interval = setInterval(() => {
       if (socket) {
         logger.log('unable to find server IP, retrying...');
-        try {
-          socket.send(message, 0, message.length, knownPort, '255.255.255.255');
-        } catch (error) {
-          logger.error('Error sending broadcast message:', error);
-        }
+        const broadcastAddresses = getBroadcastAddresses();
+        broadcastAddresses.forEach((address) => {
+          try {
+            socket.send(message, 0, message.length, knownPort, address);
+          } catch (error) {
+            logger.error(`Error sending broadcast to ${address}:`, error);
+          }
+        });
       }
     }, 1000);
 
     socket.on('listening', function () {
       socket.setBroadcast(true);
       logger.log('sending message to find server IP...');
-      try {
-        socket.send(message, 0, message.length, knownPort, '255.255.255.255');
-      } catch (error) {
-        logger.error('Error sending initial broadcast:', error);
-      }
+      const broadcastAddresses = getBroadcastAddresses();
+      broadcastAddresses.forEach((address) => {
+        try {
+          socket.send(message, 0, message.length, knownPort, address);
+        } catch (error) {
+          logger.error(`Error sending initial broadcast to ${address}:`, error);
+        }
+      });
     });
 
     socket.on('message', function (message, remote) {
