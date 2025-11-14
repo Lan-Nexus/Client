@@ -2,141 +2,185 @@
 import dgram from 'dgram';
 import os from 'os';
 import Logger from '../main/logger.js';
-import { clear } from 'console';
 
 const logger = Logger('getServerIP');
 
 const message = Buffer.from('lanLauncher://get_ip');
 const knownPort = 50000;
 
-let socket = null;
+let sockets = [];
 let interval = null;
-
-// Get all broadcast addresses from network interfaces
-function getBroadcastAddresses() {
-  const interfaces = os.networkInterfaces();
-  const addresses = ['255.255.255.255']; // Always include general broadcast
-
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
-      // Only IPv4 and not internal/loopback
-      if (iface.family === 'IPv4' && !iface.internal) {
-        // Calculate broadcast address
-        if (iface.netmask && iface.address) {
-          const ip = iface.address.split('.').map(Number);
-          const mask = iface.netmask.split('.').map(Number);
-          const broadcast = ip.map((byte, i) => byte | (~mask[i] & 255)).join('.');
-          if (!addresses.includes(broadcast)) {
-            addresses.push(broadcast);
-          }
-        }
-      }
-    }
-  }
-
-  logger.log('Broadcast addresses:', addresses);
-  return addresses;
-}
 
 export default async function getServerIP(stopSocket) {
   if (stopSocket) {
     logger.log('clearing interval');
 
-    if (socket) {
-      logger.log('closing socket');
-      socket.close();
-      socket = null;
+    sockets.forEach(socketInfo => {
+      if (socketInfo.socket) {
+        logger.log('closing socket on interface:', socketInfo.iface);
+        socketInfo.socket.close();
+      }
+    });
+    sockets = [];
+    
+    if (interval) {
+      clearInterval(interval);
+      interval = null;
     }
-    clearInterval(interval);
 
     return;
   }
   return sendMessage();
 }
 
-function sendMessage() {
-  return new Promise((resolve, reject) => {
-    if (socket) {
-      const broadcastAddresses = getBroadcastAddresses();
-      broadcastAddresses.forEach((address) => {
-        try {
-          socket.send(message, 0, message.length, knownPort, address);
-        } catch (error) {
-          logger.error(`Error sending to ${address}:`, error);
-        }
-      });
-      return;
-    }
-    logger.log('Searching for server IP...');
-    socket = dgram.createSocket('udp4');
+function getNetworkInterfaces() {
+  const interfaces = os.networkInterfaces();
+  const validInterfaces = [];
 
-    interval = setInterval(() => {
-      if (socket) {
-        logger.log('unable to find server IP, retrying...');
-        const broadcastAddresses = getBroadcastAddresses();
-        broadcastAddresses.forEach((address) => {
-          try {
-            socket.send(message, 0, message.length, knownPort, address);
-          } catch (error) {
-            logger.error(`Error sending broadcast to ${address}:`, error);
-          }
+  for (const [name, addrs] of Object.entries(interfaces)) {
+    // Skip loopback and virtual interfaces
+    if (name.toLowerCase().includes('loopback')) continue;
+    if (name.toLowerCase().includes('wsl')) continue;
+    if (name.toLowerCase().includes('hyper-v')) continue;
+    if (name.toLowerCase().includes('vethernet')) continue;
+    if (name.toLowerCase().includes('vmware')) continue;
+    if (name.toLowerCase().includes('virtualbox')) continue;
+
+    for (const addr of addrs) {
+      // Only use IPv4, non-internal interfaces
+      if (addr.family === 'IPv4' && !addr.internal) {
+        validInterfaces.push({
+          name,
+          address: addr.address,
+          netmask: addr.netmask,
+          broadcast: calculateBroadcast(addr.address, addr.netmask)
         });
       }
-    }, 1000);
+    }
+  }
 
-    socket.on('listening', function () {
-      socket.setBroadcast(true);
-      logger.log('sending message to find server IP...');
-      const broadcastAddresses = getBroadcastAddresses();
-      broadcastAddresses.forEach((address) => {
+  logger.log('Found network interfaces:', validInterfaces.map(i => `${i.name} (${i.address})`).join(', '));
+  return validInterfaces;
+}
+
+function calculateBroadcast(address, netmask) {
+  const addrParts = address.split('.').map(Number);
+  const maskParts = netmask.split('.').map(Number);
+  
+  const broadcast = addrParts.map((part, i) => {
+    return part | (~maskParts[i] & 255);
+  });
+  
+  return broadcast.join('.');
+}
+
+function sendMessage() {
+  return new Promise((resolve, reject) => {
+    const interfaces = getNetworkInterfaces();
+    
+    if (interfaces.length === 0) {
+      logger.error('No valid network interfaces found');
+      reject(new Error('No valid network interfaces found'));
+      return;
+    }
+
+    let resolved = false;
+
+    // Create a socket for each interface
+    interfaces.forEach((iface, index) => {
+      const socket = dgram.createSocket('udp4');
+      const port = 50001 + index; // Use different ports for each socket to avoid conflicts
+
+      sockets.push({ socket, iface: iface.name, port });
+
+      socket.on('listening', function () {
+        socket.setBroadcast(true);
+        logger.log(`Socket listening on ${iface.name} (${iface.address}:${port}), broadcasting to ${iface.broadcast}`);
+        
         try {
-          socket.send(message, 0, message.length, knownPort, address);
+          // Send to both the calculated broadcast address and 255.255.255.255
+          socket.send(message, 0, message.length, knownPort, iface.broadcast);
+          socket.send(message, 0, message.length, knownPort, '255.255.255.255');
         } catch (error) {
-          logger.error(`Error sending initial broadcast to ${address}:`, error);
+          logger.error(`Error sending initial broadcast on ${iface.name}:`, error);
         }
       });
+
+      socket.on('message', function (msg, remote) {
+        if (resolved) return; // Already found server
+        
+        try {
+          const data = JSON.parse(msg.toString());
+          const serverUrl = data.protocol + '://' + remote.address + ':' + data.port;
+          logger.log('Found server IP:', remote.address + ':' + data.port, 'via', iface.name);
+
+          resolved = true;
+
+          // Clean up all sockets
+          sockets.forEach(s => {
+            if (s.socket) {
+              s.socket.close();
+            }
+          });
+          sockets = [];
+
+          if (interval) {
+            clearInterval(interval);
+            interval = null;
+          }
+
+          resolve(serverUrl);
+        } catch (error) {
+          logger.error('Error parsing server response:', error);
+        }
+      });
+
+      socket.on('error', function (error) {
+        logger.error(`Socket error on ${iface.name}:`, error);
+      });
+
+      try {
+        // Bind to specific interface address
+        socket.bind(port, iface.address);
+      } catch (error) {
+        logger.error(`Error binding socket on ${iface.name}:`, error);
+      }
     });
 
-    socket.on('message', function (message, remote) {
-      try {
-        const data = JSON.parse(message.toString());
-        const serverUrl = data.protocol + '://' + remote.address + ':' + data.port;
-        logger.log('found server IP:', remote.address + ':' + data.port);
-
-        // Clean up before resolving
+    // Set up retry interval
+    interval = setInterval(() => {
+      if (resolved) return;
+      
+      logger.log('Retrying broadcast on all interfaces...');
+      sockets.forEach(({ socket, iface }) => {
         if (socket) {
-          socket.close();
-          socket = null;
+          try {
+            const ifaceInfo = interfaces.find(i => i.name === iface);
+            if (ifaceInfo) {
+              socket.send(message, 0, message.length, knownPort, ifaceInfo.broadcast);
+              socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+            }
+          } catch (error) {
+            logger.error(`Error sending retry broadcast on ${iface}:`, error);
+          }
         }
+      });
+    }, 1000);
+
+    // Timeout after 30 seconds
+    setTimeout(() => {
+      if (!resolved) {
+        logger.error('Server discovery timeout after 30 seconds');
+        sockets.forEach(s => {
+          if (s.socket) s.socket.close();
+        });
+        sockets = [];
         if (interval) {
           clearInterval(interval);
           interval = null;
         }
-
-        resolve(serverUrl);
-      } catch (error) {
-        logger.error('Error parsing server response:', error);
+        reject(new Error('Server discovery timeout'));
       }
-    });
-
-    socket.on('error', function (error) {
-      logger.error('Socket error:', error);
-      // Don't reject, just log and keep trying
-      // Network might come back later
-    });
-
-    const port = 50001;
-
-    try {
-      logger.log('binding to port:', port);
-      socket.bind(port);
-    } catch (error) {
-      logger.error('Error binding socket:', error);
-      socket = null;
-      // Retry after a delay if bind fails
-      setTimeout(() => {
-        sendMessage().then(resolve).catch(reject);
-      }, 1000);
-    }
+    }, 30000);
   });
 }
