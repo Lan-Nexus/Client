@@ -13,7 +13,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 library.add(faCheckCircle, faCircleInfo, faTriangleExclamation, faCircleXmark);
 
 import './utils/logger.js';
-import { useGameStore } from './stores/useGameStore.js';
 
 declare global {
   interface Window {
@@ -39,21 +38,7 @@ async function startApp() {
   app.component('FontAwesomeIcon', FontAwesomeIcon);
   app.mount('#app');
 
-  // Initialize WebSocket and intervals after Pinia is ready
-  // Add a small delay to ensure server address is available
-  setTimeout(async () => {
-    try {
-      const gameStore = useGameStore();
-      await gameStore.initializeWebSocket();
-      gameStore.setupIntervals();
-      console.log('✅ WebSocket and intervals initialized successfully');
-    } catch (error) {
-      console.error('❌ Failed to initialize WebSocket and intervals:', error);
-    }
-  }, 500);
-
-  // Example usage of the new bridge:
-  // (You can remove this or adapt as needed)
+  // WebSocket initialization is now handled in App.vue after server address is confirmed
 }
 
 async function waitForElectronAndStart() {

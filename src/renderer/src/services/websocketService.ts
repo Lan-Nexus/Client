@@ -26,6 +26,7 @@ export class WebSocketService {
   private _isReconnecting = false;
   private shouldReconnect = true;
   private statusChangeCallbacks: Array<() => void> = [];
+  private sessionStatusCallback: ((data: any) => void) | null = null;
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -50,7 +51,7 @@ export class WebSocketService {
 
       if (!serverAddress) {
         logger.error('No server address available for WebSocket connection');
-        return;
+        throw new Error('Server address is not available');
       }
 
       // Convert HTTP URL to WebSocket URL
@@ -114,6 +115,15 @@ export class WebSocketService {
 
       this.socket.on('active_sessions_updated', (data) => {
         logger.log('Received active_sessions_updated event:', data);
+      });
+
+      this.socket.on('my_session_status', (data) => {
+        logger.log('Received my_session_status event:', data);
+        // Handle session status response
+        if (this.sessionStatusCallback) {
+          this.sessionStatusCallback(data);
+          this.sessionStatusCallback = null; // Clear callback after use
+        }
       });
 
       this.socket.on('session_error', (data) => {
@@ -283,6 +293,43 @@ export class WebSocketService {
       logger.error('Error ending game session:', error);
       this.currentSession = null;
       return false;
+    }
+  }
+
+  /**
+   * Check with the server what game session it thinks we have active.
+   * Returns the server's view of our session, or null if no session.
+   */
+  async checkMySessionWithServer(): Promise<{
+    hasSession: boolean;
+    session: GameSessionData | null;
+  } | null> {
+    if (!this.isConnected || !this.socket) {
+      logger.warn('WebSocket not connected, cannot check session');
+      return null;
+    }
+
+    try {
+      const authStore = useAuthStore();
+      await authStore.fetchClientId();
+
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.sessionStatusCallback = null;
+          reject(new Error('Session check timed out'));
+        }, 5000); // 5 second timeout
+
+        this.sessionStatusCallback = (data) => {
+          clearTimeout(timeout);
+          resolve(data);
+        };
+
+        this.socket!.emit('check_my_session', { clientId: authStore.getClientId });
+        logger.log('Requested session status from server');
+      });
+    } catch (error) {
+      logger.error('Error checking session with server:', error);
+      return null;
     }
   }
 

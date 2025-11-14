@@ -15,7 +15,6 @@ const store = useProgressStore();
 store.listenForIpcEvents();
 
 const serverAddressStore = useServerAddressStore();
-serverAddressStore.getServerAddress();
 
 const authStore = useAuthStore();
 
@@ -26,26 +25,32 @@ const gameStore = useGameStore();
 gameStore.autoRefreshGames();
 
 onMounted(async () => {
-  document.addEventListener("keyup", keyHandler);
+  document.addEventListener('keyup', keyHandler);
 
-  // Initialize user after server address is available
-  if (serverAddressStore.serverAddress) {
+  // Start server address discovery immediately
+  console.log('🔍 Starting server address discovery...');
+  try {
+    await serverAddressStore.getServerAddress();
+    console.log('✅ Server address obtained:', serverAddressStore.serverAddress);
+
+    // Now that we have the server address, initialize WebSocket and intervals
+    console.log('🔌 Initializing WebSocket with server address:', serverAddressStore.serverAddress);
+    await gameStore.initializeWebSocket();
+    gameStore.setupIntervals();
+    console.log('✅ WebSocket and intervals initialized successfully');
+
+    // Initialize user after server address is available
     await authStore.initializeUser();
-  } else {
-    // Wait for server address to be available, then initialize user
-    const checkServer = setInterval(async () => {
-      if (serverAddressStore.serverAddress) {
-        clearInterval(checkServer);
-        await authStore.initializeUser();
-        const avatarStore = useAvatarStore();
-        await avatarStore.getAvatarFromApi(authStore.getClientId);
-      }
-    }, 100);
+    const avatarStore = useAvatarStore();
+    await avatarStore.getAvatarFromApi(authStore.getClientId);
+    console.log('✅ User and avatar initialized');
+  } catch (error) {
+    console.error('❌ Failed to get server address or initialize user:', error);
   }
 });
 
 onUnmounted(() => {
-  document.removeEventListener("keyup", keyHandler);
+  document.removeEventListener('keyup', keyHandler);
 });
 
 const newIpAddress = ref(localStorage.getItem('serverAddress') || '');
@@ -54,7 +59,7 @@ const modalRef = ref<HTMLDialogElement | null>(null);
 function keyHandler(event: KeyboardEvent) {
   if (event.key === 'Escape' && event.shiftKey == true) {
     // Handle the escape key press
-    modalRef.value?.showModal()
+    modalRef.value?.showModal();
   }
 }
 
@@ -69,12 +74,10 @@ function addServerAddress() {
     modalRef.value?.close();
   }
 }
-
 </script>
 <template>
-
   <template v-if="serverAddressStore.serverAddress == void 0">
-      <Loading title="Getting Server Address" />
+    <Loading title="Getting Server Address" />
   </template>
   <template v-else>
     <div class="flex flex-col h-full w-full overflow-hidden">
@@ -87,19 +90,24 @@ function addServerAddress() {
       <Progress />
     </div>
   </template>
-     <dialog id="my_modal_1" class="modal" ref="modalRef">
-      <div class="modal-box">
-        <h3 class="text-lg font-bold">Server Address</h3>
-        <input  type="text" v-model="newIpAddress" class="input input-bordered w-full max-w-xs mt-4 mb-4" placeholder="Enter server address" />
-        <button @click="addServerAddress" class="btn btn-primary">Use Server Address</button>
-        <div class="modal-action">
-          <form method="dialog">
-            <!-- if there is a button in form, it will close the modal -->
-            <button class="btn">Close</button>
-          </form>
-        </div>
+  <dialog id="my_modal_1" class="modal" ref="modalRef">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">Server Address</h3>
+      <input
+        type="text"
+        v-model="newIpAddress"
+        class="input input-bordered w-full max-w-xs mt-4 mb-4"
+        placeholder="Enter server address"
+      />
+      <button @click="addServerAddress" class="btn btn-primary">Use Server Address</button>
+      <div class="modal-action">
+        <form method="dialog">
+          <!-- if there is a button in form, it will close the modal -->
+          <button class="btn">Close</button>
+        </form>
       </div>
-    </dialog>
+    </div>
+  </dialog>
 </template>
 <style>
 /* Works on Firefox */

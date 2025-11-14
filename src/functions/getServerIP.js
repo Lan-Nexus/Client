@@ -12,7 +12,6 @@ let socket = null;
 let interval = null;
 
 export default async function getServerIP(stopSocket) {
-
   if (stopSocket) {
     logger.log('clearing interval');
 
@@ -29,8 +28,7 @@ export default async function getServerIP(stopSocket) {
 }
 
 function sendMessage() {
-
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (socket) {
       socket.send(message, 0, message.length, knownPort, '255.255.255.255');
       return;
@@ -41,36 +39,64 @@ function sendMessage() {
     interval = setInterval(() => {
       if (socket) {
         logger.log('unable to find server IP, retrying...');
-        socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+        try {
+          socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+        } catch (error) {
+          logger.error('Error sending broadcast message:', error);
+        }
       }
     }, 1000);
 
     socket.on('listening', function () {
       socket.setBroadcast(true);
       logger.log('sending message to find server IP...');
-      socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+      try {
+        socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+      } catch (error) {
+        logger.error('Error sending initial broadcast:', error);
+      }
     });
 
     socket.on('message', function (message, remote) {
-      const data = JSON.parse(message.toString());
-      logger.log('found server IP:', remote.address + ':' + data.port);
-      resolve(data.protocol + '://' + remote.address + ':' + data.port);
-      socket.close();
+      try {
+        const data = JSON.parse(message.toString());
+        const serverUrl = data.protocol + '://' + remote.address + ':' + data.port;
+        logger.log('found server IP:', remote.address + ':' + data.port);
 
-      clearInterval(interval);
-      socket = null;
+        // Clean up before resolving
+        if (socket) {
+          socket.close();
+          socket = null;
+        }
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+
+        resolve(serverUrl);
+      } catch (error) {
+        logger.error('Error parsing server response:', error);
+      }
     });
 
-    // Pick a random port between 49152 and 65535 for binding
-    const port = Math.floor(Math.random() * (65535 - 49152 + 1)) + 49152;
+    socket.on('error', function (error) {
+      logger.error('Socket error:', error);
+      // Don't reject, just log and keep trying
+      // Network might come back later
+    });
+
+    const port = 50001;
+
     try {
       logger.log('binding to port:', port);
       socket.bind(port);
     } catch (error) {
       logger.error('Error binding socket:', error);
       socket = null;
-      return sendMessage();
+      // Retry after a delay if bind fails
+      setTimeout(() => {
+        sendMessage().then(resolve).catch(reject);
+      }, 1000);
     }
   });
-
 }
