@@ -169,6 +169,114 @@ export const useGameStore = defineStore('game', {
       setInterval(() => {
         this.checkWebSocketConnection();
       }, 30000);
+
+      // Verify session sync with server every 60 seconds
+      setInterval(() => {
+        this.verifySessionSync();
+      }, 60000);
+    },
+
+    async verifySessionSync() {
+      if (!this.websocketConnected) {
+        logger.log('Skipping session sync check - websocket not connected');
+        return;
+      }
+
+      try {
+        const serverStatus = await websocketService.checkMySessionWithServer();
+        if (!serverStatus) {
+          logger.warn('Failed to get session status from server');
+          return;
+        }
+
+        const localSession = websocketService.getCurrentSession();
+        const hasLocalSession = localSession !== null;
+        const hasServerSession = serverStatus.hasSession;
+
+        logger.log(
+          `Session sync check - Local: ${hasLocalSession ? `game ${localSession?.gameId}` : 'none'}, Server: ${hasServerSession ? `game ${serverStatus.session?.gameId}` : 'none'}`
+        );
+
+        // Case 1: We think we're playing but server doesn't
+        if (hasLocalSession && !hasServerSession) {
+          logger.warn('Session desync detected: Local has session but server does not');
+
+          // Check if the game process is still actually running
+          const programs = await functions.getRunningPrograms();
+          if (this.gameRunning) {
+            const isRunning = this._isGameRunning(this.gameRunning, programs);
+
+            if (isRunning) {
+              // Game is still running, re-sync with server
+              logger.log('Game is still running, restarting session on server');
+              await websocketService.startGameSession(this.gameRunning.id);
+            } else {
+              // Game is not running, clear local state
+              logger.log('Game is not running, clearing local session');
+              this.gameRunning = void 0;
+              this.gameHasStarted = false;
+            }
+          }
+        }
+
+        // Case 2: Server thinks we're playing but we don't
+        if (!hasLocalSession && hasServerSession && serverStatus.session) {
+          logger.warn(
+            `Session desync detected: Server thinks we're playing game ${serverStatus.session.gameId} but we don't have a local session`
+          );
+
+          // Check if we're actually running any game
+          const programs = await functions.getRunningPrograms();
+          let foundRunningGame = false;
+
+          for (const game of this.games) {
+            if (game.id === serverStatus.session.gameId) {
+              const isRunning = this._isGameRunning(game, programs);
+              if (isRunning) {
+                logger.log(`Found game ${game.name} is actually running, syncing local state`);
+                this.gameRunning = game;
+                this.gameHasStarted = true;
+                foundRunningGame = true;
+                break;
+              }
+            }
+          }
+
+          if (!foundRunningGame) {
+            // We're not running the game, tell server to end the session
+            logger.log('Game is not running locally, ending server session');
+            await websocketService.endGameSession();
+          }
+        }
+
+        // Case 3: Both think we're playing but different games
+        if (
+          hasLocalSession &&
+          hasServerSession &&
+          localSession?.gameId !== serverStatus.session?.gameId
+        ) {
+          logger.warn(
+            `Session desync detected: Local thinks game ${localSession?.gameId}, server thinks game ${serverStatus.session?.gameId}`
+          );
+
+          // Trust the local state if the game is actually running
+          const programs = await functions.getRunningPrograms();
+          if (this.gameRunning) {
+            const isRunning = this._isGameRunning(this.gameRunning, programs);
+            if (isRunning) {
+              logger.log('Local game is running, correcting server state');
+              await websocketService.endGameSession();
+              await websocketService.startGameSession(this.gameRunning.id);
+            } else {
+              logger.log('Local game is not running, clearing and accepting server state');
+              this.gameRunning = void 0;
+              this.gameHasStarted = false;
+            }
+          }
+        }
+      } catch (error) {
+        logger.error('Error during session sync verification:', error);
+      }
     },
 
     async checkForAlreadyRunningGames() {
@@ -178,8 +286,8 @@ export const useGameStore = defineStore('game', {
         const programs = await functions.getRunningPrograms();
 
         for (const game of this.games) {
-          // Only check archive and shortcut games
-          if (game.type !== 'archive' && game.type !== 'shortcut') {
+          // Check archive, shortcut, and steam games
+          if (game.type !== 'archive' && game.type !== 'shortcut' && game.type !== 'steam') {
             continue;
           }
 
@@ -235,8 +343,12 @@ export const useGameStore = defineStore('game', {
             `watchIfGameStopped - gameRunning: ${this.gameRunning.name}, type: ${this.gameRunning.type}`
           );
 
-          // Only monitor archive and shortcut games
-          if (this.gameRunning.type !== 'archive' && this.gameRunning.type !== 'shortcut') {
+          // Monitor archive, shortcut, and steam games
+          if (
+            this.gameRunning.type !== 'archive' &&
+            this.gameRunning.type !== 'shortcut' &&
+            this.gameRunning.type !== 'steam'
+          ) {
             logger.log(`Skipping monitoring for game type: ${this.gameRunning.type}`);
             return;
           }
@@ -253,7 +365,14 @@ export const useGameStore = defineStore('game', {
             // Wait for the game to actually start before monitoring for stop
             if (isRunning) {
               this.gameHasStarted = true;
-              logger.log('Game has started, now monitoring for game stop');
+              logger.log('Game process detected, starting session');
+              // Start the websocket session now that we confirmed the process is running
+              const sessionStarted = await websocketService.startGameSession(this.gameRunning.id);
+              if (sessionStarted) {
+                logger.log('WebSocket session started successfully after process detection');
+              } else {
+                logger.warn('Failed to start websocket session after process detection');
+              }
             }
             return;
           }
@@ -289,9 +408,9 @@ export const useGameStore = defineStore('game', {
           this.gameHasStarted = false;
           logger.log('Game session ended');
         } else {
-          // No game running - check all shortcut games for external launches
+          // No game running - check shortcut and steam games for external launches
           for (const game of this.games) {
-            if (game.type !== 'shortcut') {
+            if (game.type !== 'shortcut' && game.type !== 'steam') {
               continue;
             }
 
@@ -300,7 +419,7 @@ export const useGameStore = defineStore('game', {
             if (isRunning) {
               const executables = this._getExecutablesToMonitor(game);
               logger.log(
-                `Detected external launch of shortcut game: ${game.name} (monitoring: ${executables.join(', ')})`
+                `Detected external launch of ${game.type} game: ${game.name} (monitoring: ${executables.join(', ')})`
               );
 
               // Start websocket session for this game
@@ -541,11 +660,7 @@ export const useGameStore = defineStore('game', {
         }
         this.gameRunning = selectedGame;
         this.gameHasStarted = false;
-        // Start websocket session
-        const sessionStarted = await websocketService.startGameSession(selectedGame.id);
-        if (!sessionStarted) {
-          logger.warn('Failed to start websocket session, but continuing with game launch');
-        }
+        // Don't start session yet - wait for process detection
         await this.playArchive();
         return;
       }
@@ -558,15 +673,9 @@ export const useGameStore = defineStore('game', {
     async playSteam() {
       const selectedGame = this.selectedGame;
       if (selectedGame && selectedGame.type === 'steam') {
-        // Start websocket session for Steam games too
-        const sessionStarted = await websocketService.startGameSession(selectedGame.id);
-        if (!sessionStarted) {
-          logger.warn(
-            'Failed to start websocket session for Steam game, but continuing with launch'
-          );
-        }
         this.gameRunning = selectedGame;
         this.gameHasStarted = false;
+        // Don't start session yet - wait for process detection
         document.location.href = `steam://run/${selectedGame.gameID}`;
       }
     },
@@ -602,15 +711,7 @@ export const useGameStore = defineStore('game', {
       this.gameRunning = game;
       this.gameHasStarted = false;
 
-      // Start websocket session
-      logger.log(`Starting websocket session for game ID: ${game.id}`);
-      const sessionStarted = await websocketService.startGameSession(game.id);
-      logger.log(
-        `WebSocket session start result: ${sessionStarted}, isActive: ${websocketService.isSessionActive()}`
-      );
-      if (!sessionStarted) {
-        logger.warn('Failed to start websocket session, but continuing with game launch');
-      }
+      // Don't start session yet - wait for process detection
 
       // For shortcut games, use runDirect API directly instead of the run() context
       if (game.type === 'shortcut') {

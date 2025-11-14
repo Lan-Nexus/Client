@@ -168,9 +168,17 @@ async function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
+
+  // Configure firewall for UDP port 50001
+  try {
+    const configureFirewall = await import('../functions/configureFirewall.js');
+    await configureFirewall.default();
+  } catch (error) {
+    logger.error('Failed to configure firewall:', error);
+  }
 
   // Initialize auto-updater
   setupAutoUpdater();
