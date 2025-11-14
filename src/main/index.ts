@@ -9,7 +9,86 @@ import './function.js';
 
 const logger = Logger('main');
 
-function setupAutoUpdater() {
+/**
+ * Discovers the local update server using UDP broadcast
+ * @returns Server URL if found, null otherwise
+ */
+async function discoverUpdateServer(): Promise<string | null> {
+  try {
+    logger.log('Attempting to discover local update server via UDP broadcast...');
+
+    // Import getServerIP function
+    const getServerIP = await import('../functions/getServerIP.js');
+
+    // Try to discover server with a shorter timeout
+    const serverUrl = await Promise.race([
+      getServerIP.default(false),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)) // 3 second timeout
+    ]);
+
+    if (serverUrl) {
+      logger.log('Discovered local update server:', serverUrl);
+
+      // Verify it has update endpoints by checking health
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2000);
+
+        const response = await fetch(`${serverUrl}/api/updates/health`, {
+          signal: controller.signal,
+          method: 'GET'
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          logger.log('Update server health check passed');
+          return serverUrl;
+        } else {
+          logger.log('Server found but update endpoints not available');
+          return null;
+        }
+      } catch (error) {
+        logger.log('Server found but health check failed:', error instanceof Error ? error.message : 'Unknown error');
+        return null;
+      }
+    }
+
+    logger.log('No local update server discovered');
+    return null;
+  } catch (error) {
+    logger.log('Error during server discovery:', error instanceof Error ? error.message : 'Unknown error');
+    return null;
+  }
+}
+
+async function setupAutoUpdater() {
+  const updateMode = process.env.UPDATE_MODE || 'auto'; // 'auto', 'github'
+
+  let localServerUrl: string | null = null;
+
+  // Determine which update source to use
+  if (updateMode === 'github') {
+    logger.log('Update mode: github (forced, skipping server discovery)');
+  } else if (updateMode === 'auto') {
+    // Auto-detect: discover local server via UDP broadcast
+    logger.log('Update mode: auto (discovering local server...)');
+    localServerUrl = await discoverUpdateServer();
+  }
+
+  // Configure feed URL based on discovery
+  if (localServerUrl) {
+    logger.log('Configuring autoUpdater to use local server:', localServerUrl);
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: `${localServerUrl}/api/updates/${process.platform}`
+    });
+  } else {
+    logger.log('Configuring autoUpdater to use GitHub directly');
+    // Uses electron-builder.yml publish configuration (GitHub)
+    // No need to set feed URL, it's already configured
+  }
+
   // Configure auto-updater
   console.log(!is.dev && app.getVersion() != '0.0.0');
   if (!is.dev && app.getVersion() != '0.0.0') {
