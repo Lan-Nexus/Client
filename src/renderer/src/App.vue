@@ -63,15 +63,26 @@ function keyHandler(event: KeyboardEvent) {
   }
 }
 
-function addServerAddress() {
+async function addServerAddress() {
   if (newIpAddress.value) {
     if (!newIpAddress.value.startsWith('http://')) {
       newIpAddress.value = 'http://' + newIpAddress.value;
     }
 
-    serverAddressStore.setServerAddress(newIpAddress.value);
+    console.log('🔄 Setting new server address:', newIpAddress.value);
+    await serverAddressStore.setServerAddress(newIpAddress.value);
     localStorage.setItem('serverAddress', newIpAddress.value);
+
+    // Disconnect and reconnect websocket with new server address
+    console.log('🔌 Reconnecting WebSocket to new server address...');
+    await gameStore.reconnectWebSocket();
+
+    // Reload games from new server
+    console.log('🎮 Reloading games from new server...');
+    await gameStore.loadGames();
+
     modalRef.value?.close();
+    console.log('✅ Successfully connected to new server');
   }
 }
 </script>

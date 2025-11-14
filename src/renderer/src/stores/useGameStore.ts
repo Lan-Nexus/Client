@@ -101,6 +101,23 @@ export const useGameStore = defineStore('game', {
       }
     },
 
+    async reconnectWebSocket() {
+      try {
+        logger.log('Disconnecting existing WebSocket connection...');
+        websocketService.disconnect();
+
+        logger.log('Connecting to new server address...');
+        await websocketService.connect();
+        this.updateWebSocketStatus();
+
+        logger.log('WebSocket reconnected:', this.websocketConnected);
+        return this.websocketConnected;
+      } catch (error) {
+        logger.error('Failed to reconnect WebSocket:', error);
+        return false;
+      }
+    },
+
     updateWebSocketStatus() {
       this.websocketConnected = websocketService.getConnectionStatus();
       this.websocketReconnecting = websocketService.isReconnecting();
