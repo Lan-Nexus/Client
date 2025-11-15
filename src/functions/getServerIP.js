@@ -22,15 +22,65 @@ export default async function getServerIP(stopSocket) {
       }
     });
     sockets = [];
-    
+
     if (interval) {
       clearInterval(interval);
       interval = null;
     }
 
-    return;
+    return null; // Return null instead of undefined
   }
+  logger.log('Starting server discovery...');
+
+  // Try localhost first (for local development)
+  try {
+    logger.log('Checking localhost servers...');
+    const localhostResult = await tryLocalhostServers();
+    if (localhostResult) {
+      logger.log('Found local server:', localhostResult);
+      return localhostResult;
+    }
+  } catch (error) {
+    logger.log('No localhost server found, trying network discovery...');
+  }
+
+  // Fall back to network discovery
   return sendMessage();
+}
+
+// Try common localhost ports for local development
+async function tryLocalhostServers() {
+  const portsToTry = [8080, 3000, 80, 5000];
+
+  for (const port of portsToTry) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 500); // 500ms timeout per port
+
+      const response = await fetch(`http://localhost:${port}/api/settings/server-name`, {
+        signal: controller.signal,
+        method: 'GET'
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const data = await response.json();
+        const serverName = data.serverName || 'LAN Nexus Server';
+        logger.log(`Found localhost server on port ${port}, name: ${serverName}`);
+
+        return {
+          url: `http://localhost:${port}`,
+          serverName: serverName
+        };
+      }
+    } catch (error) {
+      // Port not responding, try next
+      continue;
+    }
+  }
+
+  return null;
 }
 
 function getNetworkInterfaces() {
@@ -77,17 +127,27 @@ function calculateBroadcast(address, netmask) {
 function sendMessage() {
   return new Promise((resolve, reject) => {
     const interfaces = getNetworkInterfaces();
-    
+
     if (interfaces.length === 0) {
-      logger.error('No valid network interfaces found');
-      reject(new Error('No valid network interfaces found'));
-      return;
+      logger.log('No network interfaces found, will try localhost');
     }
 
     let resolved = false;
 
-    // Create a socket for each interface
-    interfaces.forEach((iface, index) => {
+    // Add localhost as a fallback interface for local testing
+    const allInterfaces = [...interfaces];
+    if (interfaces.length === 0 || process.env.NODE_ENV === 'development') {
+      allInterfaces.push({
+        name: 'localhost',
+        address: '127.0.0.1',
+        netmask: '255.0.0.0',
+        broadcast: '127.255.255.255'
+      });
+      logger.log('Added localhost interface for local server discovery');
+    }
+
+    // Create a socket for each interface (including localhost fallback)
+    allInterfaces.forEach((iface, index) => {
       const socket = dgram.createSocket('udp4');
       const port = 50001 + index; // Use different ports for each socket to avoid conflicts
 
@@ -96,11 +156,13 @@ function sendMessage() {
       socket.on('listening', function () {
         socket.setBroadcast(true);
         logger.log(`Socket listening on ${iface.name} (${iface.address}:${port}), broadcasting to ${iface.broadcast}`);
-        
+
         try {
           // Send to both the calculated broadcast address and 255.255.255.255
+          logger.log(`Sending broadcast to ${iface.broadcast}:${knownPort} and 255.255.255.255:${knownPort}`);
           socket.send(message, 0, message.length, knownPort, iface.broadcast);
           socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+          logger.log(`Broadcast sent successfully from ${iface.name}`);
         } catch (error) {
           logger.error(`Error sending initial broadcast on ${iface.name}:`, error);
         }
@@ -154,12 +216,12 @@ function sendMessage() {
     // Set up retry interval
     interval = setInterval(() => {
       if (resolved) return;
-      
+
       logger.log('Retrying broadcast on all interfaces...');
       sockets.forEach(({ socket, iface }) => {
         if (socket) {
           try {
-            const ifaceInfo = interfaces.find(i => i.name === iface);
+            const ifaceInfo = allInterfaces.find(i => i.name === iface);
             if (ifaceInfo) {
               socket.send(message, 0, message.length, knownPort, ifaceInfo.broadcast);
               socket.send(message, 0, message.length, knownPort, '255.255.255.255');
