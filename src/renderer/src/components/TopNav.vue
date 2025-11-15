@@ -11,10 +11,13 @@ import { computed, onMounted } from 'vue';
 import { BackgroundType, createAvatar } from '@dicebear/core';
 import { adventurer } from '@dicebear/collection';
 import { useAvatarStore } from '../stores/useAvatarStore';
+import { useBrandingStore } from '../stores/useBrandingStore';
 
 import { useGameStore } from '../stores/useGameStore.js';
+import defaultLogo from '../assets/logo.svg';
 
 const gameStore = useGameStore();
+const brandingStore = useBrandingStore();
 
 // Stores
 const avatarStore = useAvatarStore();
@@ -76,15 +79,45 @@ const currentAvatarUrl = computed(() => {
   return '';
 });
 
+// Computed logo URL
+const logoToDisplay = computed(() => {
+  // Explicitly access the value to ensure reactivity
+  const logo = brandingStore.logoUrl;
+  console.log('🖼️ TopNav logoToDisplay computed:', { logo, hasLogo: !!logo });
+  return logo || defaultLogo;
+});
+
+const handleLogoError = (e: Event) => {
+  console.error('🖼️ Logo failed to load:', logoToDisplay.value, e);
+  (e.target as HTMLImageElement).src = defaultLogo;
+};
+
+const handleLogoLoad = () => {
+  console.log('🖼️ Logo loaded successfully:', logoToDisplay.value);
+};
+
 onMounted(async () => {
+  console.log('🔝 TopNav mounted, fetching branding...');
   // Initialize avatar store
   await avatarStore.initialize();
+  // Fetch branding from server
+  await brandingStore.fetchBranding();
+  console.log('🔝 TopNav branding fetched:', {
+    lanName: brandingStore.lanName,
+    logoUrl: brandingStore.logoUrl,
+  });
 });
 </script>
 <template>
   <div class="flex justify-between items-center shadow-lg absolute w-full pe-4 gap-4">
     <div class="flex items-center pl-6">
-      <img src="../assets/logo.svg" alt="Lan Exus Logo" class="h-16" />
+      <img
+        :src="logoToDisplay"
+        :alt="brandingStore.lanName + ' Logo'"
+        class="h-16"
+        @error="handleLogoError"
+        @load="handleLogoLoad"
+      />
     </div>
     <div class="flex-grow"></div>
     <!-- <button
