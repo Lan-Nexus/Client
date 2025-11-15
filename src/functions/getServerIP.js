@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import dgram from 'dgram';
 import os from 'os';
+import { app } from 'electron';
 import Logger from '../main/logger.js';
 
 const logger = Logger('getServerIP');
@@ -197,12 +198,21 @@ function sendMessage() {
           const data = JSON.parse(msg.toString());
           const serverUrl = data.protocol + '://' + remote.address + ':' + data.port;
           const serverName = data.serverName || 'LAN Nexus Server';
+          const serverVersion = data.version || '0.0.0';
+          const clientVersion = app.getVersion();
+
+          // Filter out dev servers (v0.0.0) unless client is also in dev mode
+          if (serverVersion === '0.0.0' && clientVersion !== '0.0.0') {
+            logger.log('Skipping dev server:', serverUrl, 'version:', serverVersion,
+                       '(client is production version:', clientVersion + ')');
+            return;
+          }
 
           // Add to found servers if not already present
           if (!foundServers.has(serverUrl)) {
             logger.log('Found server:', remote.address + ':' + data.port,
-                       'name:', serverName, 'via', iface.name);
-            foundServers.set(serverUrl, { url: serverUrl, serverName: serverName });
+                       'name:', serverName, 'version:', serverVersion, 'via', iface.name);
+            foundServers.set(serverUrl, { url: serverUrl, serverName: serverName, version: serverVersion });
 
             // Start discovery timeout after first server found
             if (!discoveryTimeout && foundServers.size === 1) {

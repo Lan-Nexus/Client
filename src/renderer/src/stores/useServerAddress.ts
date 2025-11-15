@@ -7,13 +7,14 @@ const logger = Logger('server');
 interface ServerState {
   address: string;
   serverName: string;
+  version: string;
   missCount: number;
 }
 
 export const useServerAddressStore = defineStore('serverAddress', {
   state: () => ({
     serverAddress: undefined as string | undefined,
-    discoveredServers: [] as Array<{ address: string; serverName: string }>,
+    discoveredServers: [] as Array<{ address: string; serverName: string; version: string }>,
     isDiscovering: false,
     serverStates: new Map<string, ServerState>() as Map<string, ServerState>,
   }),
@@ -57,20 +58,21 @@ export const useServerAddressStore = defineStore('serverAddress', {
           const foundAddresses = new Set();
 
           // Process each found server
-          for (const { url: address, serverName } of results) {
+          for (const { url: address, serverName, version } of results) {
             foundAddresses.add(address);
 
             if (!this.serverStates.has(address)) {
-              logger.log('New server discovered:', address, 'name:', serverName);
-              this.serverStates.set(address, { address, serverName, missCount: 0 });
+              logger.log('New server discovered:', address, 'name:', serverName, 'version:', version);
+              this.serverStates.set(address, { address, serverName, version, missCount: 0 });
             } else {
-              // Server still responding - reset miss count and update name
+              // Server still responding - reset miss count and update name/version
               const state = this.serverStates.get(address)!;
               if (state.missCount > 0) {
-                logger.log('Server reconnected:', address, 'name:', serverName);
+                logger.log('Server reconnected:', address, 'name:', serverName, 'version:', version);
               }
               state.missCount = 0;
               state.serverName = serverName; // Update name in case it changed
+              state.version = version; // Update version in case it changed
             }
           }
 
@@ -100,10 +102,11 @@ export const useServerAddressStore = defineStore('serverAddress', {
           }
         }
 
-        // Update discovered servers list with names
+        // Update discovered servers list with names and versions
         this.discoveredServers = Array.from(this.serverStates.values()).map(state => ({
           address: state.address,
-          serverName: state.serverName
+          serverName: state.serverName,
+          version: state.version
         }));
 
       } catch (error) {
@@ -122,7 +125,8 @@ export const useServerAddressStore = defineStore('serverAddress', {
 
         this.discoveredServers = Array.from(this.serverStates.values()).map(state => ({
           address: state.address,
-          serverName: state.serverName
+          serverName: state.serverName,
+          version: state.version
         }));
       } finally {
         this.isDiscovering = false;
