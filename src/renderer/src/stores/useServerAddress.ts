@@ -50,28 +50,33 @@ export const useServerAddressStore = defineStore('serverAddress', {
       this.isDiscovering = true;
 
       try {
-        const result = await functions.getServerIP();
+        const results = await functions.getServerIP();
 
-        if (result) {
-          const { url: address, serverName } = result;
+        if (results && results.length > 0) {
+          // Track which servers were found in this scan
+          const foundAddresses = new Set();
 
-          // Server found - add or reset miss count
-          if (!this.serverStates.has(address)) {
-            logger.log('New server discovered:', address, 'name:', serverName);
-            this.serverStates.set(address, { address, serverName, missCount: 0 });
-          } else {
-            // Server still responding - reset miss count and update name
-            const state = this.serverStates.get(address)!;
-            if (state.missCount > 0) {
-              logger.log('Server reconnected:', address, 'name:', serverName);
+          // Process each found server
+          for (const { url: address, serverName } of results) {
+            foundAddresses.add(address);
+
+            if (!this.serverStates.has(address)) {
+              logger.log('New server discovered:', address, 'name:', serverName);
+              this.serverStates.set(address, { address, serverName, missCount: 0 });
+            } else {
+              // Server still responding - reset miss count and update name
+              const state = this.serverStates.get(address)!;
+              if (state.missCount > 0) {
+                logger.log('Server reconnected:', address, 'name:', serverName);
+              }
+              state.missCount = 0;
+              state.serverName = serverName; // Update name in case it changed
             }
-            state.missCount = 0;
-            state.serverName = serverName; // Update name in case it changed
           }
 
           // Increment miss count for servers not found in this scan
           for (const [serverAddr, state] of this.serverStates.entries()) {
-            if (serverAddr !== address) {
+            if (!foundAddresses.has(serverAddr)) {
               state.missCount++;
               logger.log(`Server ${serverAddr} missed (${state.missCount}/5)`);
 
@@ -83,7 +88,7 @@ export const useServerAddressStore = defineStore('serverAddress', {
             }
           }
         } else {
-          // No server found - increment miss count for all
+          // No servers found - increment miss count for all
           for (const [serverAddr, state] of this.serverStates.entries()) {
             state.missCount++;
             logger.log(`Server ${serverAddr} missed (${state.missCount}/5)`);

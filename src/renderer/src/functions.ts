@@ -5,7 +5,7 @@ interface Api {
   run(safeName: string, command: string, env?: Record<string, string>): Promise<void>;
   runDirect(absolutePath: string, params?: string[]): Promise<void>;
   clearTemp(): Promise<void>;
-  getServerIP(stopRequesting?: boolean): Promise<{ url: string; serverName: string }>;
+  getServerIP(stopRequesting?: boolean): Promise<Array<{ url: string; serverName: string }> | null>;
   getMachineId(): Promise<string>;
   getRunningPrograms(): Promise<string[]>;
   [key: string]: (...args: any[]) => Promise<any>;
