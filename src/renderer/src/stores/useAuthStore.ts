@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', {
 
         // Get server address
         const serverAddressStore = useServerAddressStore();
-        const serverAddress = await serverAddressStore.getServerAddress();
+        const serverAddress = serverAddressStore.serverAddress;
 
         if (!serverAddress) {
           logger.log('No server address available, skipping user creation');
@@ -89,7 +89,7 @@ export const useAuthStore = defineStore('auth', {
     async createUserOnServer() {
       try {
         const serverAddressStore = useServerAddressStore();
-        const serverAddress = await serverAddressStore.getServerAddress();
+        const serverAddress = serverAddressStore.serverAddress;
 
         if (!serverAddress || !this.clientId || !this.username) {
           logger.log('Missing required data for user creation');
@@ -111,7 +111,7 @@ export const useAuthStore = defineStore('auth', {
     async updateUserOnServer() {
       try {
         const serverAddressStore = useServerAddressStore();
-        const serverAddress = await serverAddressStore.getServerAddress();
+        const serverAddress = serverAddressStore.serverAddress;
 
         if (!serverAddress || !this.clientId || !this.username) {
           logger.log('Missing required data for user update:', {

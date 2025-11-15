@@ -48,7 +48,7 @@ onMounted(async () => {
   };
 
   // Watch for serverAddress changes
-  const unwatchServer = serverAddressStore.$subscribe((mutation, state) => {
+  const unwatchServer = serverAddressStore.$subscribe((_mutation, state) => {
     if (state.serverAddress) {
       checkServerAndInitialize();
       unwatchServer(); // Unsubscribe after first initialization
@@ -77,7 +77,7 @@ async function addServerAddress() {
     }
 
     console.log('🔄 Setting new server address:', newIpAddress.value);
-    await serverAddressStore.setServerAddress(newIpAddress.value);
+    await serverAddressStore.selectServer(newIpAddress.value);
     localStorage.setItem('serverAddress', newIpAddress.value);
 
     // Disconnect and reconnect websocket with new server address

@@ -47,7 +47,7 @@ export class WebSocketService {
 
     try {
       const serverAddressStore = useServerAddressStore();
-      const serverAddress = await serverAddressStore.getServerAddress();
+      const serverAddress = serverAddressStore.serverAddress;
 
       if (!serverAddress) {
         logger.error('No server address available for WebSocket connection');
