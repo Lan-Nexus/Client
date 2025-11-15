@@ -78,6 +78,25 @@ function configureUpdateSource(serverUrl: string | null) {
   }
 }
 
+let updateCheckInterval: NodeJS.Timeout | null = null;
+
+// Configurable update check interval (in minutes)
+// Can be overridden via UPDATE_CHECK_INTERVAL_MINUTES environment variable
+// Default: 5 minutes
+const getUpdateCheckInterval = () => {
+  const envInterval = process.env.UPDATE_CHECK_INTERVAL_MINUTES;
+  const minutes = envInterval ? parseInt(envInterval, 10) : 5;
+
+  // Validate interval (min 1 minute, max 60 minutes)
+  if (isNaN(minutes) || minutes < 1 || minutes > 60) {
+    logger.log(`Invalid UPDATE_CHECK_INTERVAL_MINUTES (${envInterval}), using default: 5 minutes`);
+    return 5 * 60 * 1000; // 5 minutes in milliseconds
+  }
+
+  logger.log(`Update check interval set to ${minutes} minute(s)`);
+  return minutes * 60 * 1000; // Convert to milliseconds
+};
+
 /**
  * Sets up autoUpdater event handlers (call once on startup)
  */
@@ -300,12 +319,35 @@ app.whenReady().then(async () => {
       logger.log('IPC: configure-updates called with serverUrl:', serverUrl || 'GitHub');
       configureUpdateSource(serverUrl);
 
+      // Clear any existing interval
+      if (updateCheckInterval) {
+        clearInterval(updateCheckInterval);
+        updateCheckInterval = null;
+      }
+
       // Start checking for updates
       // If using a local server, always check (even in dev mode for testing)
       // If using GitHub, only check in production mode
       // Use checkForUpdates() instead of checkForUpdatesAndNotify() to avoid native notifications
-      if (serverUrl || (!is.dev && app.getVersion() != '0.0.0')) {
-        return await autoUpdater.checkForUpdates();
+      const shouldCheck = serverUrl || (!is.dev && app.getVersion() != '0.0.0');
+
+      if (shouldCheck) {
+        // Initial check
+        const result = await autoUpdater.checkForUpdates();
+
+        // Set up recurring check with configurable interval
+        const intervalMs = getUpdateCheckInterval();
+        updateCheckInterval = setInterval(async () => {
+          try {
+            logger.log('Periodic update check...');
+            await autoUpdater.checkForUpdates();
+          } catch (error) {
+            logger.error('Periodic update check failed:', error);
+          }
+        }, intervalMs);
+
+        logger.log(`Recurring update check enabled (every ${intervalMs / 60000} minute(s))`);
+        return result;
       }
 
       return null;
@@ -346,6 +388,12 @@ app.whenReady().then(async () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  // Clean up update check interval
+  if (updateCheckInterval) {
+    clearInterval(updateCheckInterval);
+    updateCheckInterval = null;
+  }
+
   if (process.platform !== 'darwin') {
     app.quit();
   }
