@@ -108,11 +108,14 @@ function sendMessage() {
 
       socket.on('message', function (msg, remote) {
         if (resolved) return; // Already found server
-        
+
         try {
           const data = JSON.parse(msg.toString());
           const serverUrl = data.protocol + '://' + remote.address + ':' + data.port;
-          logger.log('Found server IP:', remote.address + ':' + data.port, 'via', iface.name);
+          const serverName = data.serverName || 'LAN Nexus Server';
+
+          logger.log('Found server:', remote.address + ':' + data.port,
+                     'name:', serverName, 'via', iface.name);
 
           resolved = true;
 
@@ -129,7 +132,8 @@ function sendMessage() {
             interval = null;
           }
 
-          resolve(serverUrl);
+          // Return object with URL and server name
+          resolve({ url: serverUrl, serverName: serverName });
         } catch (error) {
           logger.error('Error parsing server response:', error);
         }

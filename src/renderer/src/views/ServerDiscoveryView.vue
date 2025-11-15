@@ -76,15 +76,17 @@ async function connectToManualServer() {
 const displayServers = computed(() => {
   return serverAddressStore.discoveredServers.map(server => {
     try {
-      const url = new URL(server);
+      const url = new URL(server.address);
       return {
-        full: server,
-        display: `${url.hostname}${url.port ? ':' + url.port : ''}`
+        address: server.address,
+        serverName: server.serverName,
+        ipDisplay: `${url.hostname}${url.port ? ':' + url.port : ''}`
       };
     } catch {
       return {
-        full: server,
-        display: server
+        address: server.address,
+        serverName: server.serverName,
+        ipDisplay: server.address
       };
     }
   });
@@ -119,16 +121,16 @@ const displayServers = computed(() => {
             <div class="space-y-2 mb-6">
               <button
                 v-for="server in displayServers"
-                :key="server.full"
-                @click="selectDiscoveredServer(server.full)"
+                :key="server.address"
+                @click="selectDiscoveredServer(server.address)"
                 class="btn btn-lg btn-outline w-full justify-start gap-4 hover:btn-primary transition-all"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                 </svg>
                 <div class="flex flex-col items-start">
-                  <span class="font-semibold">LAN Nexus Server</span>
-                  <span class="text-sm opacity-70">{{ server.display }}</span>
+                  <span class="font-semibold">{{ server.serverName }}</span>
+                  <span class="text-sm opacity-70">{{ server.ipDisplay }}</span>
                 </div>
                 <div class="ml-auto badge badge-success badge-sm">LAN</div>
               </button>

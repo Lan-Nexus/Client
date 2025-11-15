@@ -6,13 +6,14 @@ const logger = Logger('server');
 
 interface ServerState {
   address: string;
+  serverName: string;
   missCount: number;
 }
 
 export const useServerAddressStore = defineStore('serverAddress', {
   state: () => ({
     serverAddress: undefined as string | undefined,
-    discoveredServers: [] as string[],
+    discoveredServers: [] as Array<{ address: string; serverName: string }>,
     isDiscovering: false,
     serverStates: new Map<string, ServerState>() as Map<string, ServerState>,
   }),
@@ -49,31 +50,44 @@ export const useServerAddressStore = defineStore('serverAddress', {
       this.isDiscovering = true;
 
       try {
-        const address = await functions.getServerIP();
+        const result = await functions.getServerIP();
 
-        if (address) {
+        if (result) {
+          const { url: address, serverName } = result;
+
           // Server found - add or reset miss count
           if (!this.serverStates.has(address)) {
-            logger.log('New server discovered:', address);
-            this.serverStates.set(address, { address, missCount: 0 });
+            logger.log('New server discovered:', address, 'name:', serverName);
+            this.serverStates.set(address, { address, serverName, missCount: 0 });
           } else {
-            // Server still responding - reset miss count
+            // Server still responding - reset miss count and update name
             const state = this.serverStates.get(address)!;
             if (state.missCount > 0) {
-              logger.log('Server reconnected:', address);
+              logger.log('Server reconnected:', address, 'name:', serverName);
             }
             state.missCount = 0;
+            state.serverName = serverName; // Update name in case it changed
           }
-        }
 
-        // Increment miss count for servers not found in this scan
-        const foundAddress = address;
-        for (const [serverAddr, state] of this.serverStates.entries()) {
-          if (serverAddr !== foundAddress) {
+          // Increment miss count for servers not found in this scan
+          for (const [serverAddr, state] of this.serverStates.entries()) {
+            if (serverAddr !== address) {
+              state.missCount++;
+              logger.log(`Server ${serverAddr} missed (${state.missCount}/5)`);
+
+              // Remove after 5 consecutive misses
+              if (state.missCount >= 5) {
+                logger.log('Server removed after 5 misses:', serverAddr);
+                this.serverStates.delete(serverAddr);
+              }
+            }
+          }
+        } else {
+          // No server found - increment miss count for all
+          for (const [serverAddr, state] of this.serverStates.entries()) {
             state.missCount++;
             logger.log(`Server ${serverAddr} missed (${state.missCount}/5)`);
 
-            // Remove after 5 consecutive misses
             if (state.missCount >= 5) {
               logger.log('Server removed after 5 misses:', serverAddr);
               this.serverStates.delete(serverAddr);
@@ -81,8 +95,11 @@ export const useServerAddressStore = defineStore('serverAddress', {
           }
         }
 
-        // Update discovered servers list (only show servers that are still tracked)
-        this.discoveredServers = Array.from(this.serverStates.keys());
+        // Update discovered servers list with names
+        this.discoveredServers = Array.from(this.serverStates.values()).map(state => ({
+          address: state.address,
+          serverName: state.serverName
+        }));
 
       } catch (error) {
         logger.log('Discovery scan failed:', error);
@@ -98,7 +115,10 @@ export const useServerAddressStore = defineStore('serverAddress', {
           }
         }
 
-        this.discoveredServers = Array.from(this.serverStates.keys());
+        this.discoveredServers = Array.from(this.serverStates.values()).map(state => ({
+          address: state.address,
+          serverName: state.serverName
+        }));
       } finally {
         this.isDiscovering = false;
       }
