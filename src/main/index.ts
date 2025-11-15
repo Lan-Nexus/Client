@@ -167,65 +167,8 @@ function setupAutoUpdaterEvents() {
   });
 }
 
-/**
- * Discovers servers and configures updates accordingly
- * - If no servers found: immediately use GitHub
- * - If servers found: send to renderer for user selection
- */
-async function discoverAndConfigureUpdates() {
-  try {
-    // Check environment variable override
-    const updateMode = process.env.UPDATE_MODE || 'auto';
-
-    if (updateMode === 'github') {
-      logger.log('UPDATE_MODE=github, skipping server discovery');
-      configureUpdateSource(null);
-
-      if (!is.dev && app.getVersion() != '0.0.0') {
-        autoUpdater.checkForUpdatesAndNotify();
-      }
-      return;
-    }
-
-    // Discover servers
-    logger.log('Starting server discovery for updates...');
-    const servers = await discoverUpdateServers();
-
-    if (servers.length === 0) {
-      // No servers found - use GitHub immediately
-      logger.log('No servers found, configuring GitHub for updates');
-      configureUpdateSource(null);
-
-      if (!is.dev && app.getVersion() != '0.0.0') {
-        autoUpdater.checkForUpdatesAndNotify();
-      }
-
-      // Notify renderer that no servers were found
-      BrowserWindow.getAllWindows().forEach((window) => {
-        window.webContents.send('update-servers-discovered', { servers: [], usingGithub: true });
-      });
-    } else {
-      // Servers found - send to renderer for user selection
-      logger.log(`Found ${servers.length} server(s), waiting for user selection`);
-
-      BrowserWindow.getAllWindows().forEach((window) => {
-        window.webContents.send('update-servers-discovered', { servers, usingGithub: false });
-      });
-
-      // Don't check for updates yet - wait for user to select a server
-      // Renderer will call 'configure-updates' IPC when ready
-    }
-  } catch (error) {
-    logger.error('Error in discoverAndConfigureUpdates:', error);
-
-    // On error, fall back to GitHub
-    configureUpdateSource(null);
-
-    if (!is.dev && app.getVersion() != '0.0.0') {
-      autoUpdater.checkForUpdatesAndNotify();
-    }
-  }
-}
+// Note: discoverAndConfigureUpdates was removed in favor of IPC-based approach
+// Updates are now configured via 'discover-update-servers' and 'configure-updates' IPC handlers
 
 let iconPath: Promise<string>;
 if (process.platform == 'linux') {
@@ -340,7 +283,7 @@ app.whenReady().then(async () => {
   });
 
   // Configure update source and start checking
-  ipcMain.handle('configure-updates', async (event, serverUrl: string | null) => {
+  ipcMain.handle('configure-updates', async (_event, serverUrl: string | null) => {
     try {
       logger.log('IPC: configure-updates called with serverUrl:', serverUrl || 'GitHub');
       configureUpdateSource(serverUrl);
