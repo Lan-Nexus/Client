@@ -84,6 +84,18 @@ function configureUpdateSource(serverUrl: string | null) {
 function setupAutoUpdaterEvents() {
   autoUpdater.logger = logger;
 
+  // Configure updater behavior
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true; // Install when user quits normally
+
+  // Disable native notifications (we'll show our own modal)
+  // @ts-ignore - These properties exist but may not be in types
+  autoUpdater.fullChangelog = false;
+  if (process.platform === 'darwin') {
+    // @ts-ignore
+    autoUpdater.allowPrerelease = false;
+  }
+
   // Auto-updater events
   autoUpdater.on('checking-for-update', () => {
     logger.log('Checking for update...');
@@ -157,13 +169,13 @@ function setupAutoUpdaterEvents() {
       }, 1000);
     });
 
+    // Send to renderer - modal will handle user choice
     BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('update-downloaded', info);
     });
-    // Auto-install after 5 seconds
-    setTimeout(() => {
-      autoUpdater.quitAndInstall();
-    }, 5000);
+
+    // Don't auto-install - let user decide via modal
+    // Update will install automatically on next app quit via autoInstallOnAppQuit
   });
 }
 
@@ -289,7 +301,9 @@ app.whenReady().then(async () => {
       configureUpdateSource(serverUrl);
 
       // Start checking for updates
-      if (!is.dev && app.getVersion() != '0.0.0') {
+      // If using a local server, always check (even in dev mode for testing)
+      // If using GitHub, only check in production mode
+      if (serverUrl || (!is.dev && app.getVersion() != '0.0.0')) {
         return await autoUpdater.checkForUpdatesAndNotify();
       }
 
