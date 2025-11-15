@@ -156,6 +156,7 @@ function sendMessage() {
 
     const foundServers = new Map(); // Track unique servers by URL
     let discoveryTimeout = null;
+    let resolved = false; // Track whether promise has been resolved
 
     // Add localhost as a fallback interface for local testing
     const allInterfaces = [...interfaces];
@@ -250,6 +251,9 @@ function sendMessage() {
 
     // Function to finish discovery and return results
     function finishDiscovery() {
+      if (resolved) return; // Already resolved, nothing to do
+      resolved = true;
+
       logger.log(`Discovery complete. Found ${foundServers.size} server(s)`);
 
       // Clean up all sockets
