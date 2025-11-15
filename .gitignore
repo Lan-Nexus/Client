@@ -6,3 +6,4 @@ out
 *.log*
 temp
 games
+.env

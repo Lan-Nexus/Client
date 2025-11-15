@@ -10,6 +10,7 @@ interface UpdaterAPI {
   getVersion: () => Promise<string>
   checkForUpdates: () => Promise<any>
   quitAndInstall: () => Promise<void>
+  configureUpdates: (serverUrl: string | null) => Promise<any>
   onUpdateAvailable: (callback: (info: any) => void) => void
   onUpdateNotAvailable: (callback: (info: any) => void) => void
   onUpdateDownloaded: (callback: (info: any) => void) => void

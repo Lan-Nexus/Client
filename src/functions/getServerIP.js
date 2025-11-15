@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import dgram from 'dgram';
 import os from 'os';
+import { app } from 'electron';
 import Logger from '../main/logger.js';
 
 const logger = Logger('getServerIP');
@@ -22,15 +23,87 @@ export default async function getServerIP(stopSocket) {
       }
     });
     sockets = [];
-    
+
     if (interval) {
       clearInterval(interval);
       interval = null;
     }
 
-    return;
+    return null; // Return null instead of undefined
   }
-  return sendMessage();
+  logger.log('Starting server discovery...');
+
+  // Collect servers from both localhost and network
+  const allServers = [];
+
+  // Try localhost first (for local development)
+  try {
+    logger.log('Checking localhost servers...');
+    const localhostResult = await tryLocalhostServers();
+    if (localhostResult) {
+      logger.log('Found local server:', localhostResult);
+      allServers.push(localhostResult);
+    }
+  } catch (error) {
+    logger.log('No localhost server found');
+  }
+
+  // Try network discovery
+  try {
+    const networkServers = await sendMessage();
+    if (networkServers && networkServers.length > 0) {
+      // Add network servers that aren't already in the list
+      for (const server of networkServers) {
+        if (!allServers.some(s => s.url === server.url)) {
+          allServers.push(server);
+        }
+      }
+    }
+  } catch (error) {
+    logger.log('Network discovery failed:', error);
+  }
+
+  if (allServers.length > 0) {
+    logger.log(`Total servers found: ${allServers.length}`);
+    return allServers;
+  } else {
+    throw new Error('No servers found');
+  }
+}
+
+// Try common localhost ports for local development
+async function tryLocalhostServers() {
+  const portsToTry = [8080, 3000, 80, 5000];
+
+  for (const port of portsToTry) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 500); // 500ms timeout per port
+
+      const response = await fetch(`http://localhost:${port}/api/settings/server-name`, {
+        signal: controller.signal,
+        method: 'GET'
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const data = await response.json();
+        const serverName = data.serverName || 'LAN Nexus Server';
+        logger.log(`Found localhost server on port ${port}, name: ${serverName}`);
+
+        return {
+          url: `http://localhost:${port}`,
+          serverName: serverName
+        };
+      }
+    } catch (error) {
+      // Port not responding, try next
+      continue;
+    }
+  }
+
+  return null;
 }
 
 function getNetworkInterfaces() {
@@ -77,17 +150,29 @@ function calculateBroadcast(address, netmask) {
 function sendMessage() {
   return new Promise((resolve, reject) => {
     const interfaces = getNetworkInterfaces();
-    
+
     if (interfaces.length === 0) {
-      logger.error('No valid network interfaces found');
-      reject(new Error('No valid network interfaces found'));
-      return;
+      logger.log('No network interfaces found, will try localhost');
     }
 
-    let resolved = false;
+    const foundServers = new Map(); // Track unique servers by URL
+    let discoveryTimeout = null;
+    let resolved = false; // Track whether promise has been resolved
 
-    // Create a socket for each interface
-    interfaces.forEach((iface, index) => {
+    // Add localhost as a fallback interface for local testing
+    const allInterfaces = [...interfaces];
+    if (interfaces.length === 0 || process.env.NODE_ENV === 'development') {
+      allInterfaces.push({
+        name: 'localhost',
+        address: '127.0.0.1',
+        netmask: '255.0.0.0',
+        broadcast: '127.255.255.255'
+      });
+      logger.log('Added localhost interface for local server discovery');
+    }
+
+    // Create a socket for each interface (including localhost fallback)
+    allInterfaces.forEach((iface, index) => {
       const socket = dgram.createSocket('udp4');
       const port = 50001 + index; // Use different ports for each socket to avoid conflicts
 
@@ -96,40 +181,47 @@ function sendMessage() {
       socket.on('listening', function () {
         socket.setBroadcast(true);
         logger.log(`Socket listening on ${iface.name} (${iface.address}:${port}), broadcasting to ${iface.broadcast}`);
-        
+
         try {
           // Send to both the calculated broadcast address and 255.255.255.255
+          logger.log(`Sending broadcast to ${iface.broadcast}:${knownPort} and 255.255.255.255:${knownPort}`);
           socket.send(message, 0, message.length, knownPort, iface.broadcast);
           socket.send(message, 0, message.length, knownPort, '255.255.255.255');
+          logger.log(`Broadcast sent successfully from ${iface.name}`);
         } catch (error) {
           logger.error(`Error sending initial broadcast on ${iface.name}:`, error);
         }
       });
 
       socket.on('message', function (msg, remote) {
-        if (resolved) return; // Already found server
-        
         try {
           const data = JSON.parse(msg.toString());
           const serverUrl = data.protocol + '://' + remote.address + ':' + data.port;
-          logger.log('Found server IP:', remote.address + ':' + data.port, 'via', iface.name);
+          const serverName = data.serverName || 'LAN Nexus Server';
+          const serverVersion = data.version || '0.0.0';
+          const clientVersion = app.getVersion();
 
-          resolved = true;
-
-          // Clean up all sockets
-          sockets.forEach(s => {
-            if (s.socket) {
-              s.socket.close();
-            }
-          });
-          sockets = [];
-
-          if (interval) {
-            clearInterval(interval);
-            interval = null;
+          // Filter out dev servers (v0.0.0) unless client is also in dev mode
+          if (serverVersion === '0.0.0' && clientVersion !== '0.0.0') {
+            logger.log('Skipping dev server:', serverUrl, 'version:', serverVersion,
+                       '(client is production version:', clientVersion + ')');
+            return;
           }
 
-          resolve(serverUrl);
+          // Add to found servers if not already present
+          if (!foundServers.has(serverUrl)) {
+            logger.log('Found server:', remote.address + ':' + data.port,
+                       'name:', serverName, 'version:', serverVersion, 'via', iface.name);
+            foundServers.set(serverUrl, { url: serverUrl, serverName: serverName, version: serverVersion });
+
+            // Start discovery timeout after first server found
+            if (!discoveryTimeout && foundServers.size === 1) {
+              logger.log('First server found, will collect responses for 2 more seconds...');
+              discoveryTimeout = setTimeout(() => {
+                finishDiscovery();
+              }, 2000); // Collect for 2 seconds after first response
+            }
+          }
         } catch (error) {
           logger.error('Error parsing server response:', error);
         }
@@ -150,12 +242,12 @@ function sendMessage() {
     // Set up retry interval
     interval = setInterval(() => {
       if (resolved) return;
-      
+
       logger.log('Retrying broadcast on all interfaces...');
       sockets.forEach(({ socket, iface }) => {
         if (socket) {
           try {
-            const ifaceInfo = interfaces.find(i => i.name === iface);
+            const ifaceInfo = allInterfaces.find(i => i.name === iface);
             if (ifaceInfo) {
               socket.send(message, 0, message.length, knownPort, ifaceInfo.broadcast);
               socket.send(message, 0, message.length, knownPort, '255.255.255.255');
@@ -167,20 +259,45 @@ function sendMessage() {
       });
     }, 1000);
 
-    // Timeout after 30 seconds
-    setTimeout(() => {
-      if (!resolved) {
-        logger.error('Server discovery timeout after 30 seconds');
-        sockets.forEach(s => {
-          if (s.socket) s.socket.close();
-        });
-        sockets = [];
-        if (interval) {
-          clearInterval(interval);
-          interval = null;
-        }
-        reject(new Error('Server discovery timeout'));
+    // Function to finish discovery and return results
+    function finishDiscovery() {
+      if (resolved) return; // Already resolved, nothing to do
+      resolved = true;
+
+      logger.log(`Discovery complete. Found ${foundServers.size} server(s)`);
+
+      // Clean up all sockets
+      sockets.forEach(s => {
+        if (s.socket) s.socket.close();
+      });
+      sockets = [];
+
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
       }
-    }, 30000);
+
+      if (discoveryTimeout) {
+        clearTimeout(discoveryTimeout);
+        discoveryTimeout = null;
+      }
+
+      // Return all found servers as array
+      const servers = Array.from(foundServers.values());
+      if (servers.length > 0) {
+        resolve(servers);
+      } else {
+        reject(new Error('No servers found'));
+      }
+    }
+
+    // Overall timeout (5 seconds if no servers found)
+    setTimeout(() => {
+      if (foundServers.size === 0) {
+        logger.log('Server discovery timeout after 5 seconds, no servers found');
+        finishDiscovery();
+      }
+      // If servers were found, the discoveryTimeout will handle completion
+    }, 5000);
   });
 }

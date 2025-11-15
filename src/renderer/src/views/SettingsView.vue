@@ -215,15 +215,17 @@ let pollInterval = null
 const appVersion = ref('')
 const isCheckingForUpdates = ref(false)
 const updateAvailable = ref(false)
-const updateDownloaded = ref(false)
 const downloadProgress = ref(0)
 const updateInfo = ref(null)
 const lastUpdateCheck = ref(null)
 
+// Get global update state from localStorage
+const updateDownloaded = ref(localStorage.getItem('updateDownloaded') === 'true')
+
 // Computed properties
 const updateStatus = computed(() => {
   if (isCheckingForUpdates.value) return 'Checking for updates...'
-  if (updateDownloaded.value) return 'Update ready to install'
+  if (updateDownloaded.value) return 'Pending restart'
   if (updateAvailable.value) return 'Update available'
   if (downloadProgress.value > 0 && downloadProgress.value < 100) return 'Downloading update...'
   return 'Up to date'
@@ -268,6 +270,7 @@ async function checkForUpdates() {
 }
 
 function installUpdate() {
+  localStorage.removeItem('updateDownloaded')
   if (window.updaterAPI) window.updaterAPI.quitAndInstall()
 }
 
@@ -322,7 +325,11 @@ onMounted(async () => {
 
     window.updaterAPI.onUpdateAvailable((info) => { updateAvailable.value = true; updateInfo.value = info; isCheckingForUpdates.value = false })
     window.updaterAPI.onUpdateNotAvailable(() => { updateAvailable.value = false; isCheckingForUpdates.value = false })
-    window.updaterAPI.onUpdateDownloaded((info) => { updateDownloaded.value = true; downloadProgress.value = 100 })
+    // Note: update-downloaded is handled globally in App.vue, just update local state here
+    window.updaterAPI.onUpdateDownloaded(() => {
+      updateDownloaded.value = true
+      downloadProgress.value = 100
+    })
     window.updaterAPI.onDownloadProgress((progress) => { downloadProgress.value = Math.round(progress.percent) })
     window.updaterAPI.onError(() => { isCheckingForUpdates.value = false })
   } else { appVersion.value = 'Development' }

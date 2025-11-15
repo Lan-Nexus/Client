@@ -9,13 +9,111 @@ import './function.js';
 
 const logger = Logger('main');
 
-function setupAutoUpdater() {
-  // Configure auto-updater
-  console.log(!is.dev && app.getVersion() != '0.0.0');
-  if (!is.dev && app.getVersion() != '0.0.0') {
-    autoUpdater.checkForUpdatesAndNotify();
+/**
+ * Discovers available local update servers using UDP broadcast
+ * @returns Array of server URLs found, empty if none
+ */
+async function discoverUpdateServers(): Promise<string[]> {
+  try {
+    logger.log('Discovering local update servers via UDP broadcast...');
+
+    // Import getServerIP function
+    const getServerIP = await import('../functions/getServerIP.js');
+
+    // Try to discover server with 5 second timeout
+    const serverUrl = await Promise.race([
+      getServerIP.default(false),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)) // 5 second timeout
+    ]);
+
+    if (serverUrl) {
+      logger.log('Discovered server:', serverUrl);
+
+      // Verify it has update endpoints by checking health
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2000);
+
+        const response = await fetch(`${serverUrl}/api/updates/health`, {
+          signal: controller.signal,
+          method: 'GET'
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          logger.log('Update server health check passed:', serverUrl);
+          return [serverUrl]; // Return as array (could be extended to discover multiple servers)
+        } else {
+          logger.log('Server found but update endpoints not available');
+        }
+      } catch (error) {
+        logger.log('Server found but health check failed:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+
+    logger.log('No local update servers discovered');
+    return [];
+  } catch (error) {
+    logger.log('Error during server discovery:', error instanceof Error ? error.message : 'Unknown error');
+    return [];
   }
+}
+
+/**
+ * Configures the autoUpdater to use a specific update source
+ * @param serverUrl Local server URL, or null to use GitHub
+ */
+function configureUpdateSource(serverUrl: string | null) {
+  if (serverUrl) {
+    logger.log('Configuring autoUpdater to use local server:', serverUrl);
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: `${serverUrl}/api/updates/${process.platform}`
+    });
+  } else {
+    logger.log('Configuring autoUpdater to use GitHub directly');
+    // Uses electron-builder.yml publish configuration (GitHub)
+    // No need to set feed URL, it's already configured
+  }
+}
+
+let updateCheckInterval: NodeJS.Timeout | null = null;
+
+// Configurable update check interval (in minutes)
+// Can be overridden via UPDATE_CHECK_INTERVAL_MINUTES environment variable
+// Default: 5 minutes
+const getUpdateCheckInterval = () => {
+  const envInterval = process.env.UPDATE_CHECK_INTERVAL_MINUTES;
+  const minutes = envInterval ? parseInt(envInterval, 10) : 5;
+
+  // Validate interval (min 1 minute, max 60 minutes)
+  if (isNaN(minutes) || minutes < 1 || minutes > 60) {
+    logger.log(`Invalid UPDATE_CHECK_INTERVAL_MINUTES (${envInterval}), using default: 5 minutes`);
+    return 5 * 60 * 1000; // 5 minutes in milliseconds
+  }
+
+  logger.log(`Update check interval set to ${minutes} minute(s)`);
+  return minutes * 60 * 1000; // Convert to milliseconds
+};
+
+/**
+ * Sets up autoUpdater event handlers (call once on startup)
+ */
+function setupAutoUpdaterEvents() {
   autoUpdater.logger = logger;
+
+  // Configure updater behavior
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true; // Install when user quits normally
+
+  // Disable native notifications (we'll show our own modal)
+  // @ts-ignore - These properties exist but may not be in types
+  autoUpdater.fullChangelog = false;
+  if (process.platform === 'darwin') {
+    // @ts-ignore
+    autoUpdater.allowPrerelease = false;
+  }
 
   // Auto-updater events
   autoUpdater.on('checking-for-update', () => {
@@ -90,15 +188,18 @@ function setupAutoUpdater() {
       }, 1000);
     });
 
+    // Send to renderer - modal will handle user choice
     BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('update-downloaded', info);
     });
-    // Auto-install after 5 seconds
-    setTimeout(() => {
-      autoUpdater.quitAndInstall();
-    }, 5000);
+
+    // Don't auto-install - let user decide via modal
+    // Update will install automatically on next app quit via autoInstallOnAppQuit
   });
 }
+
+// Note: discoverAndConfigureUpdates was removed in favor of IPC-based approach
+// Updates are now configured via 'discover-update-servers' and 'configure-updates' IPC handlers
 
 let iconPath: Promise<string>;
 if (process.platform == 'linux') {
@@ -180,8 +281,11 @@ app.whenReady().then(async () => {
     logger.error('Failed to configure firewall:', error);
   }
 
-  // Initialize auto-updater
-  setupAutoUpdater();
+  // Set up auto-updater event handlers (but don't check for updates yet)
+  setupAutoUpdaterEvents();
+
+  // Don't automatically discover/configure updates
+  // Updates will be configured when renderer calls 'configure-updates' after server selection
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -196,6 +300,61 @@ app.whenReady().then(async () => {
   // Auto-updater IPC handlers
   ipcMain.handle('app-version', () => {
     return app.getVersion();
+  });
+
+  // Discover available update servers
+  ipcMain.handle('discover-update-servers', async () => {
+    try {
+      logger.log('IPC: discover-update-servers called');
+      return await discoverUpdateServers();
+    } catch (error) {
+      logger.error('Failed to discover update servers:', error);
+      throw error;
+    }
+  });
+
+  // Configure update source and start checking
+  ipcMain.handle('configure-updates', async (_event, serverUrl: string | null) => {
+    try {
+      logger.log('IPC: configure-updates called with serverUrl:', serverUrl || 'GitHub');
+      configureUpdateSource(serverUrl);
+
+      // Clear any existing interval
+      if (updateCheckInterval) {
+        clearInterval(updateCheckInterval);
+        updateCheckInterval = null;
+      }
+
+      // Start checking for updates
+      // If using a local server, always check (even in dev mode for testing)
+      // If using GitHub, only check in production mode
+      // Use checkForUpdates() instead of checkForUpdatesAndNotify() to avoid native notifications
+      const shouldCheck = serverUrl || (!is.dev && app.getVersion() != '0.0.0');
+
+      if (shouldCheck) {
+        // Initial check
+        const result = await autoUpdater.checkForUpdates();
+
+        // Set up recurring check with configurable interval
+        const intervalMs = getUpdateCheckInterval();
+        updateCheckInterval = setInterval(async () => {
+          try {
+            logger.log('Periodic update check...');
+            await autoUpdater.checkForUpdates();
+          } catch (error) {
+            logger.error('Periodic update check failed:', error);
+          }
+        }, intervalMs);
+
+        logger.log(`Recurring update check enabled (every ${intervalMs / 60000} minute(s))`);
+        return result;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Failed to configure updates:', error);
+      throw error;
+    }
   });
 
   ipcMain.handle('check-for-updates', async () => {
@@ -229,6 +388,12 @@ app.whenReady().then(async () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  // Clean up update check interval
+  if (updateCheckInterval) {
+    clearInterval(updateCheckInterval);
+    updateCheckInterval = null;
+  }
+
   if (process.platform !== 'darwin') {
     app.quit();
   }

@@ -1147,11 +1147,9 @@ async function saveAvatar(): Promise<void> {
       return;
     }
 
-    let serverAddress;
-    try {
-      serverAddress = await serverAddressStore.getServerAddress();
-    } catch (serverAddressError) {
-      console.error('Error getting server address:', serverAddressError);
+    const serverAddress = serverAddressStore.serverAddress;
+    if (!serverAddress) {
+      console.error('No server address available');
       alerts.showWarning({
         title: 'Server Address Error',
         description:

@@ -29,6 +29,13 @@ const updaterAPI = {
   getVersion: () => ipcRenderer.invoke('app-version'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
+  // New: Server discovery and configuration
+  discoverUpdateServers: () => ipcRenderer.invoke('discover-update-servers'),
+  configureUpdates: (serverUrl: string | null) => ipcRenderer.invoke('configure-updates', serverUrl),
+  onUpdateServersDiscovered: (callback: (data: { servers: string[], usingGithub: boolean }) => void) => {
+    ipcRenderer.on('update-servers-discovered', (_event, data) => callback(data));
+  },
+  // Existing events
   onUpdateAvailable: (callback: (info: any) => void) => {
     ipcRenderer.on('update-available', (_event, info) => callback(info));
   },
