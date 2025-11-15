@@ -190,32 +190,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Update Downloaded Modal -->
-    <div v-if="showUpdateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="card w-96 bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title text-2xl mb-4 flex items-center gap-2">
-            <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Update Downloaded
-          </h2>
-          <p class="text-base-content/80 mb-6">
-            A new version has been downloaded and is ready to install. Would you like to restart now?
-          </p>
-          <div class="card-actions justify-end gap-2">
-            <button @click="restartLater" class="btn btn-outline">
-              Later
-            </button>
-            <button @click="restartNow" class="btn btn-primary">
-              Restart Now
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -241,11 +215,12 @@ let pollInterval = null
 const appVersion = ref('')
 const isCheckingForUpdates = ref(false)
 const updateAvailable = ref(false)
-const updateDownloaded = ref(false)
 const downloadProgress = ref(0)
 const updateInfo = ref(null)
 const lastUpdateCheck = ref(null)
-const showUpdateModal = ref(false)
+
+// Get global update state from localStorage
+const updateDownloaded = ref(localStorage.getItem('updateDownloaded') === 'true')
 
 // Computed properties
 const updateStatus = computed(() => {
@@ -295,19 +270,8 @@ async function checkForUpdates() {
 }
 
 function installUpdate() {
+  localStorage.removeItem('updateDownloaded')
   if (window.updaterAPI) window.updaterAPI.quitAndInstall()
-}
-
-function restartNow() {
-  showUpdateModal.value = false
-  localStorage.removeItem('updateDownloaded') // Clear flag since we're restarting now
-  if (window.updaterAPI) window.updaterAPI.quitAndInstall()
-}
-
-function restartLater() {
-  showUpdateModal.value = false
-  // Keep the updateDownloaded state so status shows "Pending restart"
-  // Update will be installed automatically on next app quit
 }
 
 // Update username on blur
@@ -354,11 +318,6 @@ onMounted(async () => {
   const ip = await getIpAddress(serverAddressStore.serverAddress)
   clientIp.value = ip || 'Unable to fetch IP address'
 
-  // Check if there's a pending update from previous session
-  if (localStorage.getItem('updateDownloaded') === 'true') {
-    updateDownloaded.value = true
-  }
-
   // Get app version
   if (window.updaterAPI) {
     try { appVersion.value = await window.updaterAPI.getVersion() }
@@ -366,12 +325,10 @@ onMounted(async () => {
 
     window.updaterAPI.onUpdateAvailable((info) => { updateAvailable.value = true; updateInfo.value = info; isCheckingForUpdates.value = false })
     window.updaterAPI.onUpdateNotAvailable(() => { updateAvailable.value = false; isCheckingForUpdates.value = false })
-    window.updaterAPI.onUpdateDownloaded((info) => {
+    // Note: update-downloaded is handled globally in App.vue, just update local state here
+    window.updaterAPI.onUpdateDownloaded(() => {
       updateDownloaded.value = true
       downloadProgress.value = 100
-      showUpdateModal.value = true
-      // Persist the update state so it shows on restart
-      localStorage.setItem('updateDownloaded', 'true')
     })
     window.updaterAPI.onDownloadProgress((progress) => { downloadProgress.value = Math.round(progress.percent) })
     window.updaterAPI.onError(() => { isCheckingForUpdates.value = false })

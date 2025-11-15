@@ -303,8 +303,9 @@ app.whenReady().then(async () => {
       // Start checking for updates
       // If using a local server, always check (even in dev mode for testing)
       // If using GitHub, only check in production mode
+      // Use checkForUpdates() instead of checkForUpdatesAndNotify() to avoid native notifications
       if (serverUrl || (!is.dev && app.getVersion() != '0.0.0')) {
-        return await autoUpdater.checkForUpdatesAndNotify();
+        return await autoUpdater.checkForUpdates();
       }
 
       return null;

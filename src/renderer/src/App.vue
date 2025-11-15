@@ -24,8 +24,40 @@ runningStore.init();
 const gameStore = useGameStore();
 gameStore.autoRefreshGames();
 
+// Global update state
+const updateDownloaded = ref(false);
+const showUpdateModal = ref(false);
+
+// Check if there's a pending update from previous session
+if (localStorage.getItem('updateDownloaded') === 'true') {
+  updateDownloaded.value = true;
+}
+
+// Restart functions
+function restartNow() {
+  showUpdateModal.value = false;
+  localStorage.removeItem('updateDownloaded');
+  if (window.updaterAPI) window.updaterAPI.quitAndInstall();
+}
+
+function restartLater() {
+  showUpdateModal.value = false;
+  localStorage.setItem('updateDownloaded', 'true');
+  updateDownloaded.value = true;
+}
+
 onMounted(async () => {
   document.addEventListener('keyup', keyHandler);
+
+  // Set up global update event listeners
+  if (window.updaterAPI) {
+    window.updaterAPI.onUpdateDownloaded((info) => {
+      console.log('Update downloaded globally:', info);
+      updateDownloaded.value = true;
+      showUpdateModal.value = true;
+      localStorage.setItem('updateDownloaded', 'true');
+    });
+  }
 
   // Server discovery happens in ServerDiscoveryView
   // Once serverAddress is set, initialize the app
@@ -128,6 +160,32 @@ async function addServerAddress() {
       </div>
     </div>
   </dialog>
+
+  <!-- Global Update Downloaded Modal -->
+  <div v-if="showUpdateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="card w-96 bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title text-2xl mb-4 flex items-center gap-2">
+          <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Update Downloaded
+        </h2>
+        <p class="text-base-content/80 mb-6">
+          A new version has been downloaded and is ready to install. Would you like to restart now?
+        </p>
+        <div class="card-actions justify-end gap-2">
+          <button @click="restartLater" class="btn btn-outline">
+            Later
+          </button>
+          <button @click="restartNow" class="btn btn-primary">
+            Restart Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 <style>
 /* Works on Firefox */
