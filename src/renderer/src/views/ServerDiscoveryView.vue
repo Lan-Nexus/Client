@@ -136,7 +136,8 @@ const displayServers = computed(() => {
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="text-xs opacity-50">v{{ server.version }}</span>
-                  <div class="badge badge-success badge-sm">LAN</div>
+                  <div v-if="server.version === '0.0.0'" class="badge badge-warning badge-sm">DEV</div>
+                  <div v-else class="badge badge-success badge-sm">LAN</div>
                 </div>
               </button>
             </div>
