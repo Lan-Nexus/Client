@@ -10,24 +10,24 @@ import './function.js';
 const logger = Logger('main');
 
 /**
- * Discovers the local update server using UDP broadcast
- * @returns Server URL if found, null otherwise
+ * Discovers available local update servers using UDP broadcast
+ * @returns Array of server URLs found, empty if none
  */
-async function discoverUpdateServer(): Promise<string | null> {
+async function discoverUpdateServers(): Promise<string[]> {
   try {
-    logger.log('Attempting to discover local update server via UDP broadcast...');
+    logger.log('Discovering local update servers via UDP broadcast...');
 
     // Import getServerIP function
     const getServerIP = await import('../functions/getServerIP.js');
 
-    // Try to discover server with a shorter timeout
+    // Try to discover server with 5 second timeout
     const serverUrl = await Promise.race([
       getServerIP.default(false),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)) // 3 second timeout
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)) // 5 second timeout
     ]);
 
     if (serverUrl) {
-      logger.log('Discovered local update server:', serverUrl);
+      logger.log('Discovered server:', serverUrl);
 
       // Verify it has update endpoints by checking health
       try {
@@ -42,58 +42,46 @@ async function discoverUpdateServer(): Promise<string | null> {
         clearTimeout(timeout);
 
         if (response.ok) {
-          logger.log('Update server health check passed');
-          return serverUrl;
+          logger.log('Update server health check passed:', serverUrl);
+          return [serverUrl]; // Return as array (could be extended to discover multiple servers)
         } else {
           logger.log('Server found but update endpoints not available');
-          return null;
         }
       } catch (error) {
         logger.log('Server found but health check failed:', error instanceof Error ? error.message : 'Unknown error');
-        return null;
       }
     }
 
-    logger.log('No local update server discovered');
-    return null;
+    logger.log('No local update servers discovered');
+    return [];
   } catch (error) {
     logger.log('Error during server discovery:', error instanceof Error ? error.message : 'Unknown error');
-    return null;
+    return [];
   }
 }
 
-async function setupAutoUpdater() {
-  const updateMode = process.env.UPDATE_MODE || 'auto'; // 'auto', 'github'
-
-  let localServerUrl: string | null = null;
-
-  // Determine which update source to use
-  if (updateMode === 'github') {
-    logger.log('Update mode: github (forced, skipping server discovery)');
-  } else if (updateMode === 'auto') {
-    // Auto-detect: discover local server via UDP broadcast
-    logger.log('Update mode: auto (discovering local server...)');
-    localServerUrl = await discoverUpdateServer();
-  }
-
-  // Configure feed URL based on discovery
-  if (localServerUrl) {
-    logger.log('Configuring autoUpdater to use local server:', localServerUrl);
+/**
+ * Configures the autoUpdater to use a specific update source
+ * @param serverUrl Local server URL, or null to use GitHub
+ */
+function configureUpdateSource(serverUrl: string | null) {
+  if (serverUrl) {
+    logger.log('Configuring autoUpdater to use local server:', serverUrl);
     autoUpdater.setFeedURL({
       provider: 'generic',
-      url: `${localServerUrl}/api/updates/${process.platform}`
+      url: `${serverUrl}/api/updates/${process.platform}`
     });
   } else {
     logger.log('Configuring autoUpdater to use GitHub directly');
     // Uses electron-builder.yml publish configuration (GitHub)
     // No need to set feed URL, it's already configured
   }
+}
 
-  // Configure auto-updater
-  console.log(!is.dev && app.getVersion() != '0.0.0');
-  if (!is.dev && app.getVersion() != '0.0.0') {
-    autoUpdater.checkForUpdatesAndNotify();
-  }
+/**
+ * Sets up autoUpdater event handlers (call once on startup)
+ */
+function setupAutoUpdaterEvents() {
   autoUpdater.logger = logger;
 
   // Auto-updater events
@@ -179,6 +167,66 @@ async function setupAutoUpdater() {
   });
 }
 
+/**
+ * Discovers servers and configures updates accordingly
+ * - If no servers found: immediately use GitHub
+ * - If servers found: send to renderer for user selection
+ */
+async function discoverAndConfigureUpdates() {
+  try {
+    // Check environment variable override
+    const updateMode = process.env.UPDATE_MODE || 'auto';
+
+    if (updateMode === 'github') {
+      logger.log('UPDATE_MODE=github, skipping server discovery');
+      configureUpdateSource(null);
+
+      if (!is.dev && app.getVersion() != '0.0.0') {
+        autoUpdater.checkForUpdatesAndNotify();
+      }
+      return;
+    }
+
+    // Discover servers
+    logger.log('Starting server discovery for updates...');
+    const servers = await discoverUpdateServers();
+
+    if (servers.length === 0) {
+      // No servers found - use GitHub immediately
+      logger.log('No servers found, configuring GitHub for updates');
+      configureUpdateSource(null);
+
+      if (!is.dev && app.getVersion() != '0.0.0') {
+        autoUpdater.checkForUpdatesAndNotify();
+      }
+
+      // Notify renderer that no servers were found
+      BrowserWindow.getAllWindows().forEach((window) => {
+        window.webContents.send('update-servers-discovered', { servers: [], usingGithub: true });
+      });
+    } else {
+      // Servers found - send to renderer for user selection
+      logger.log(`Found ${servers.length} server(s), waiting for user selection`);
+
+      BrowserWindow.getAllWindows().forEach((window) => {
+        window.webContents.send('update-servers-discovered', { servers, usingGithub: false });
+      });
+
+      // Don't check for updates yet - wait for user to select a server
+      // Renderer will call 'configure-updates' IPC when ready
+    }
+  } catch (error) {
+    logger.error('Error in discoverAndConfigureUpdates:', error);
+
+    // On error, fall back to GitHub
+    configureUpdateSource(null);
+
+    if (!is.dev && app.getVersion() != '0.0.0') {
+      autoUpdater.checkForUpdatesAndNotify();
+    }
+  }
+}
+
 let iconPath: Promise<string>;
 if (process.platform == 'linux') {
   iconPath = import('../../resources/icon.png?asset').then((module) => module.default);
@@ -259,8 +307,11 @@ app.whenReady().then(async () => {
     logger.error('Failed to configure firewall:', error);
   }
 
-  // Initialize auto-updater
-  setupAutoUpdater();
+  // Set up auto-updater event handlers (but don't check for updates yet)
+  setupAutoUpdaterEvents();
+
+  // Don't automatically discover/configure updates
+  // Updates will be configured when renderer calls 'configure-updates' after server selection
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -275,6 +326,35 @@ app.whenReady().then(async () => {
   // Auto-updater IPC handlers
   ipcMain.handle('app-version', () => {
     return app.getVersion();
+  });
+
+  // Discover available update servers
+  ipcMain.handle('discover-update-servers', async () => {
+    try {
+      logger.log('IPC: discover-update-servers called');
+      return await discoverUpdateServers();
+    } catch (error) {
+      logger.error('Failed to discover update servers:', error);
+      throw error;
+    }
+  });
+
+  // Configure update source and start checking
+  ipcMain.handle('configure-updates', async (event, serverUrl: string | null) => {
+    try {
+      logger.log('IPC: configure-updates called with serverUrl:', serverUrl || 'GitHub');
+      configureUpdateSource(serverUrl);
+
+      // Start checking for updates
+      if (!is.dev && app.getVersion() != '0.0.0') {
+        return await autoUpdater.checkForUpdatesAndNotify();
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Failed to configure updates:', error);
+      throw error;
+    }
   });
 
   ipcMain.handle('check-for-updates', async () => {

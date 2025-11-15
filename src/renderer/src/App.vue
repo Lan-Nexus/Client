@@ -3,7 +3,7 @@ import Progress from './components/Progress.vue';
 import TopNav from './components/TopNav.vue';
 import { useServerAddressStore } from './stores/useServerAddress.js';
 import { useAuthStore } from './stores/useAuthStore.js';
-import Loading from './components/Loading.vue';
+import ServerDiscoveryView from './views/ServerDiscoveryView.vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import Alert from './components/Alert.vue';
 import { useProgressStore } from './stores/useProgress';
@@ -27,26 +27,33 @@ gameStore.autoRefreshGames();
 onMounted(async () => {
   document.addEventListener('keyup', keyHandler);
 
-  // Start server address discovery immediately
-  console.log('🔍 Starting server address discovery...');
-  try {
-    await serverAddressStore.getServerAddress();
-    console.log('✅ Server address obtained:', serverAddressStore.serverAddress);
+  // Server discovery happens in ServerDiscoveryView
+  // Once serverAddress is set, initialize the app
+  const checkServerAndInitialize = async () => {
+    if (serverAddressStore.serverAddress) {
+      console.log('✅ Server address obtained:', serverAddressStore.serverAddress);
 
-    // Now that we have the server address, initialize WebSocket and intervals
-    console.log('🔌 Initializing WebSocket with server address:', serverAddressStore.serverAddress);
-    await gameStore.initializeWebSocket();
-    gameStore.setupIntervals();
-    console.log('✅ WebSocket and intervals initialized successfully');
+      // Now that we have the server address, initialize WebSocket and intervals
+      console.log('🔌 Initializing WebSocket with server address:', serverAddressStore.serverAddress);
+      await gameStore.initializeWebSocket();
+      gameStore.setupIntervals();
+      console.log('✅ WebSocket and intervals initialized successfully');
 
-    // Initialize user after server address is available
-    await authStore.initializeUser();
-    const avatarStore = useAvatarStore();
-    await avatarStore.getAvatarFromApi(authStore.getClientId);
-    console.log('✅ User and avatar initialized');
-  } catch (error) {
-    console.error('❌ Failed to get server address or initialize user:', error);
-  }
+      // Initialize user after server address is available
+      await authStore.initializeUser();
+      const avatarStore = useAvatarStore();
+      await avatarStore.getAvatarFromApi(authStore.getClientId);
+      console.log('✅ User and avatar initialized');
+    }
+  };
+
+  // Watch for serverAddress changes
+  const unwatchServer = serverAddressStore.$subscribe((mutation, state) => {
+    if (state.serverAddress) {
+      checkServerAndInitialize();
+      unwatchServer(); // Unsubscribe after first initialization
+    }
+  });
 });
 
 onUnmounted(() => {
@@ -87,9 +94,11 @@ async function addServerAddress() {
 }
 </script>
 <template>
+  <!-- Show unified server discovery screen until server is selected -->
   <template v-if="serverAddressStore.serverAddress == void 0">
-    <Loading title="Getting Server Address" />
+    <ServerDiscoveryView />
   </template>
+  <!-- Show main app once server is connected -->
   <template v-else>
     <div class="flex flex-col h-full w-full overflow-hidden">
       <TopNav />
