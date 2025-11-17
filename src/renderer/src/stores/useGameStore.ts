@@ -22,6 +22,7 @@ export const useGameStore = defineStore('game', {
     websocketConnected: false,
     websocketReconnecting: false,
     websocketReconnectAttempts: 0,
+    currentSteamAppId: null as string | null,
   }),
   getters: {
     selectedGame: (state) => {
@@ -302,6 +303,22 @@ export const useGameStore = defineStore('game', {
       try {
         const programs = await functions.getRunningPrograms();
 
+        // Check for Steam games first
+        const steamAppId = await functions.getRunningSteamAppId();
+        if (steamAppId && !this.gameRunning) {
+          logger.log(`Found running Steam game with AppID: ${steamAppId}`);
+
+          // Always send steamAppId to server for lookup (don't match locally)
+          logger.log(`Sending Steam AppID ${steamAppId} to server for lookup`);
+          const sessionStarted = await websocketService.startGameSession(0, steamAppId, false);
+          if (sessionStarted) {
+            logger.log(`Started session for Steam game with AppID: ${steamAppId}`);
+            this.gameHasStarted = true;
+            this.currentSteamAppId = steamAppId;
+          }
+        }
+
+        // Check for other game types (archive, shortcut, steam with executables)
         for (const game of this.games) {
           // Check archive, shortcut, and steam games
           if (game.type !== 'archive' && game.type !== 'shortcut' && game.type !== 'steam') {
@@ -353,6 +370,56 @@ export const useGameStore = defineStore('game', {
     async watchIfGameStopped() {
       try {
         const programs = await functions.getRunningPrograms();
+
+        // Check for Steam games
+        const steamAppId = await functions.getRunningSteamAppId();
+
+        // Handle Steam game detection
+        if (steamAppId && steamAppId !== this.currentSteamAppId) {
+          // New Steam game detected
+          logger.log(`Steam game detected with AppID: ${steamAppId}`);
+          this.currentSteamAppId = steamAppId;
+
+          // End previous session if exists
+          if (this.gameRunning) {
+            logger.log('Ending previous game session for Steam game switch');
+            await websocketService.endGameSession();
+            if (this.gameRunning.needsKey && this.gameRunning.gamekey?.id != null) {
+              await this.releaseGameKey(this.gameRunning.id);
+            }
+          }
+
+          // Always send steamAppId to server for lookup (don't match locally)
+          logger.log(`Sending Steam AppID ${steamAppId} to server for lookup`);
+          const sessionStarted = await websocketService.startGameSession(0, steamAppId, false);
+          if (sessionStarted) {
+            logger.log(`Started session for Steam game with AppID: ${steamAppId}`);
+            this.gameRunning = void 0;
+            this.gameHasStarted = true;
+          }
+        } else if (!steamAppId && this.currentSteamAppId) {
+          // Steam game stopped
+          logger.log(`Steam game stopped (was AppID: ${this.currentSteamAppId})`);
+          this.currentSteamAppId = null;
+
+          // If we're tracking a Steam game (or unknown game), end the session
+          if (this.gameHasStarted) {
+            logger.log('Steam game session ending');
+
+            if (websocketService.isSessionActive()) {
+              const sessionEnded = await websocketService.endGameSession();
+              if (!sessionEnded) {
+                logger.warn('Failed to properly end Steam game websocket session');
+              } else {
+                logger.log('Steam game WebSocket session ended successfully');
+              }
+            }
+
+            this.gameRunning = void 0;
+            this.gameHasStarted = false;
+            logger.log('Steam game session ended');
+          }
+        }
 
         // If we have a game running, monitor it
         if (this.gameRunning) {

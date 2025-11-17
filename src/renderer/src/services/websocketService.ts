@@ -9,6 +9,8 @@ export interface GameSessionData {
   id?: number;
   clientId: string;
   gameId: number;
+  steamAppId?: string;
+  isInGameList?: boolean;
   startTime: string;
   endTime?: string;
   isActive: number;
@@ -222,7 +224,11 @@ export class WebSocketService {
     }
   }
 
-  async startGameSession(gameId: number): Promise<boolean> {
+  async startGameSession(
+    gameId: number,
+    steamAppId?: string,
+    isInGameList: boolean = true
+  ): Promise<boolean> {
     if (!this.isConnected || !this.socket) {
       logger.warn('WebSocket not connected, cannot start game session');
       return false;
@@ -241,6 +247,8 @@ export class WebSocketService {
       const sessionData: GameSessionData = {
         clientId: authStore.getClientId,
         gameId: gameId,
+        steamAppId: steamAppId,
+        isInGameList: isInGameList,
         startTime: new Date().toISOString(),
         isActive: 1,
       };
